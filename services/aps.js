@@ -15,10 +15,11 @@ service.getAuthorizationUrl = () => authenticationClient.authorize(APS_CLIENT_ID
 ]);
 
 service.authCallbackMiddleware = async (req, res, next) => {
-    const internalCredentials = await authenticationClient.getThreeLeggedToken(APS_CLIENT_ID, APS_CLIENT_SECRET, req.query.code, APS_CALLBACK_URL);
-    const publicCredentials = await authenticationClient.getRefreshToken(APS_CLIENT_ID, APS_CLIENT_SECRET, internalCredentials.refresh_token, [
-        Scopes.ViewablesRead
-    ]);
+    const internalCredentials = await authenticationClient.getThreeLeggedToken(APS_CLIENT_ID, req.query.code, APS_CALLBACK_URL, { clientSecret: APS_CLIENT_SECRET });
+    const publicCredentials = await authenticationClient.getRefreshToken(APS_CLIENT_ID, internalCredentials.refresh_token, {
+        clientSecret: APS_CLIENT_SECRET,
+        scopes: [Scopes.ViewablesRead]
+    });
     req.session.public_token = publicCredentials.access_token;
     req.session.internal_token = internalCredentials.access_token;
     req.session.refresh_token = publicCredentials.refresh_token;
@@ -34,13 +35,14 @@ service.authRefreshMiddleware = async (req, res, next) => {
     }
 
     if (expires_at < Date.now()) {
-        const internalCredentials = await authenticationClient.getRefreshToken(APS_CLIENT_ID, APS_CLIENT_SECRET, refresh_token, [
-            Scopes.DataRead,
-            Scopes.DataCreate
-        ]);
-        const publicCredentials = await authenticationClient.getRefreshToken(APS_CLIENT_ID, internalCredentials.refresh_token, [
-            Scopes.ViewablesRead
-        ]);
+        const internalCredentials = await authenticationClient.getRefreshToken(APS_CLIENT_ID, refresh_token, {
+            clientSecret: APS_CLIENT_SECRET,
+            scopes: [Scopes.DataRead, Scopes.DataCreate]
+        });
+        const publicCredentials = await authenticationClient.getRefreshToken(APS_CLIENT_ID, internalCredentials.refresh_token, {
+            clientSecret: APS_CLIENT_SECRET,
+            scopes: [Scopes.ViewablesRead]
+        });
         req.session.public_token = publicCredentials.access_token;
         req.session.internal_token = internalCredentials.access_token;
         req.session.refresh_token = publicCredentials.refresh_token;
