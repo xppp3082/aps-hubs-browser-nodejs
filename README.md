@@ -15,8 +15,8 @@ from https://tutorials.autodesk.io.
 
 ### Prerequisites
 
-- [APS credentials](https://forge.autodesk.com/en/docs/oauth/v2/tutorials/create-app)
-- Provisioned access to [BIM 360 Docs](https://forge.autodesk.com/en/docs/bim360/v1/tutorials/getting-started/manage-access-to-docs/)
+- [APS credentials](https://aps.autodesk.com/en/docs/oauth/v2/tutorials/create-app)
+- Provisioned access to [BIM 360 Docs](https://aps.autodesk.com/en/docs/bim360/v1/tutorials/getting-started/manage-access-to-docs/)
 or Autodesk Construction Cloud
 - [Node.js](https://nodejs.org) (Long Term Support version is recommended)
 - Command-line terminal such as [PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/overview)
@@ -44,7 +44,7 @@ SERVER_SESSION_SECRET="<secret-phrase>" # phrase used to encrypt/decrypt server 
 
 > For applications deployed to a custom domain, the callback URL will be `http://<your-domain>/api/auth/callback`
 > or `https://<your-domain>/api/auth/callback`. Do not forget to update the callback URL for your application
-> in https://forge.autodesk.com/myapps as well.
+> in https://aps.autodesk.com/myapps as well.
 
 - Run the application, either from your code editor, or by running `npm start` in terminal
 - Open http://localhost:8080
@@ -54,7 +54,7 @@ SERVER_SESSION_SECRET="<secret-phrase>" # phrase used to encrypt/decrypt server 
 
 ## Troubleshooting
 
-Please contact us via https://forge.autodesk.com/en/support/get-help.
+Please contact us via https://aps.autodesk.com/en/support/get-help.
 
 ## License
 
