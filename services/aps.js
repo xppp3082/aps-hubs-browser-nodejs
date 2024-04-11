@@ -3,9 +3,9 @@ const { AuthenticationClient, Scopes, ResponseType } = require('@aps_sdk/authent
 const { DataManagementClient } = require('@aps_sdk/data-management');
 const { APS_CLIENT_ID, APS_CLIENT_SECRET, APS_CALLBACK_URL } = require('../config.js');
 
-const sdkmanager = SdkManagerBuilder.create().build();
-const authenticationClient = new AuthenticationClient(sdkmanager);
-const dataManagementClient = new DataManagementClient(sdkmanager);
+const sdkManager = SdkManagerBuilder.create().build();
+const authenticationClient = new AuthenticationClient(sdkManager);
+const dataManagementClient = new DataManagementClient(sdkManager);
 const service = module.exports = {};
 
 service.getAuthorizationUrl = () => authenticationClient.authorize(APS_CLIENT_ID, ResponseType.Code, APS_CALLBACK_URL, [
@@ -15,7 +15,9 @@ service.getAuthorizationUrl = () => authenticationClient.authorize(APS_CLIENT_ID
 ]);
 
 service.authCallbackMiddleware = async (req, res, next) => {
-    const internalCredentials = await authenticationClient.getThreeLeggedToken(APS_CLIENT_ID, req.query.code, APS_CALLBACK_URL, { clientSecret: APS_CLIENT_SECRET });
+    const internalCredentials = await authenticationClient.getThreeLeggedToken(APS_CLIENT_ID, req.query.code, APS_CALLBACK_URL, {
+        clientSecret: APS_CLIENT_SECRET
+    });
     const publicCredentials = await authenticationClient.getRefreshToken(APS_CLIENT_ID, internalCredentials.refresh_token, {
         clientSecret: APS_CLIENT_SECRET,
         scopes: [Scopes.ViewablesRead]
