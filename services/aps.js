@@ -1,18 +1,14 @@
 const { SdkManagerBuilder } = require('@aps_sdk/autodesk-sdkmanager');
-const { AuthenticationClient, Scopes, ResponseType } = require('@aps_sdk/authentication');
+const { AuthenticationClient, ResponseType } = require('@aps_sdk/authentication');
 const { DataManagementClient } = require('@aps_sdk/data-management');
-const { APS_CLIENT_ID, APS_CLIENT_SECRET, APS_CALLBACK_URL } = require('../config.js');
+const { APS_CLIENT_ID, APS_CLIENT_SECRET, APS_CALLBACK_URL, INTERNAL_TOKEN_SCOPES, PUBLIC_TOKEN_SCOPES } = require('../config.js');
 
 const sdkManager = SdkManagerBuilder.create().build();
 const authenticationClient = new AuthenticationClient(sdkManager);
-const dataManagementClient = new DataManagementClient(sdkManager);
+const dataManagementClient = new DataManagementClient();
 const service = module.exports = {};
 
-service.getAuthorizationUrl = () => authenticationClient.authorize(APS_CLIENT_ID, ResponseType.Code, APS_CALLBACK_URL, [
-    Scopes.DataRead,
-    Scopes.DataCreate,
-    Scopes.ViewablesRead
-]);
+service.getAuthorizationUrl = () => authenticationClient.authorize(APS_CLIENT_ID, ResponseType.Code, APS_CALLBACK_URL, INTERNAL_TOKEN_SCOPES);
 
 service.authCallbackMiddleware = async (req, res, next) => {
     const internalCredentials = await authenticationClient.getThreeLeggedToken(APS_CLIENT_ID, req.query.code, APS_CALLBACK_URL, {
@@ -20,7 +16,7 @@ service.authCallbackMiddleware = async (req, res, next) => {
     });
     const publicCredentials = await authenticationClient.refreshToken(internalCredentials.refresh_token, APS_CLIENT_ID, {
         clientSecret: APS_CLIENT_SECRET,
-        scopes: [Scopes.ViewablesRead]
+        scopes: PUBLIC_TOKEN_SCOPES
     });
     req.session.public_token = publicCredentials.access_token;
     req.session.internal_token = internalCredentials.access_token;
@@ -39,11 +35,11 @@ service.authRefreshMiddleware = async (req, res, next) => {
     if (expires_at < Date.now()) {
         const internalCredentials = await authenticationClient.refreshToken(refresh_token, APS_CLIENT_ID, {
             clientSecret: APS_CLIENT_SECRET,
-            scopes: [Scopes.DataRead, Scopes.DataCreate]
+            scopes: INTERNAL_TOKEN_SCOPES
         });
         const publicCredentials = await authenticationClient.refreshToken(internalCredentials.refresh_token, APS_CLIENT_ID, {
             clientSecret: APS_CLIENT_SECRET,
-            scopes: [Scopes.ViewablesRead]
+            scopes: PUBLIC_TOKEN_SCOPES
         });
         req.session.public_token = publicCredentials.access_token;
         req.session.internal_token = internalCredentials.access_token;
@@ -67,26 +63,26 @@ service.getUserProfile = async (accessToken) => {
 };
 
 service.getHubs = async (accessToken) => {
-    const resp = await dataManagementClient.getHubs(accessToken);
+    const resp = await dataManagementClient.getHubs({ accessToken });
     return resp.data;
 };
 
 service.getProjects = async (hubId, accessToken) => {
-    const resp = await dataManagementClient.getHubProjects(accessToken, hubId);
+    const resp = await dataManagementClient.getHubProjects(hubId, { accessToken });
     return resp.data;
 };
 
 service.getProjectContents = async (hubId, projectId, folderId, accessToken) => {
     if (!folderId) {
-        const resp = await dataManagementClient.getProjectTopFolders(accessToken, hubId, projectId);
+        const resp = await dataManagementClient.getProjectTopFolders(hubId, projectId, { accessToken });
         return resp.data;
     } else {
-        const resp = await dataManagementClient.getFolderContents(accessToken, projectId, folderId);
+        const resp = await dataManagementClient.getFolderContents(projectId, folderId, { accessToken });
         return resp.data;
     }
 };
 
 service.getItemVersions = async (projectId, itemId, accessToken) => {
-    const resp = await dataManagementClient.getItemVersions(accessToken, projectId, itemId);
+    const resp = await dataManagementClient.getItemVersions(projectId, itemId, { accessToken });
     return resp.data;
 };
