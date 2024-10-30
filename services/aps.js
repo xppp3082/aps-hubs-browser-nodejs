@@ -1,10 +1,8 @@
-const { SdkManagerBuilder } = require('@aps_sdk/autodesk-sdkmanager');
 const { AuthenticationClient, ResponseType } = require('@aps_sdk/authentication');
 const { DataManagementClient } = require('@aps_sdk/data-management');
 const { APS_CLIENT_ID, APS_CLIENT_SECRET, APS_CALLBACK_URL, INTERNAL_TOKEN_SCOPES, PUBLIC_TOKEN_SCOPES } = require('../config.js');
 
-const sdkManager = SdkManagerBuilder.create().build();
-const authenticationClient = new AuthenticationClient(sdkManager);
+const authenticationClient = new AuthenticationClient();
 const dataManagementClient = new DataManagementClient();
 const service = module.exports = {};
 
