@@ -1,4 +1,5 @@
 import "./extensions/MoveExtension.js";
+import "./extensions/DeleteExtension.js";
 
 async function getAccessToken(callback) {
   try {
@@ -18,7 +19,11 @@ export function initViewer(container) {
       { env: "AutodeskProduction", getAccessToken },
       function () {
         const config = {
-          extensions: ["Autodesk.DocumentBrowser", "MoveExtension"],
+          extensions: [
+            "Autodesk.DocumentBrowser",
+            "MoveExtension",
+            "DeleteExtension",
+          ],
         };
         const viewer = new Autodesk.Viewing.GuiViewer3D(container, config);
         viewer.start();
