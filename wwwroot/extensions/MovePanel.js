@@ -5,6 +5,11 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
     this.extension = extension;
     this.selectedElement = null;
     this.viewer = extension.viewer;
+    this.currentPosition = {
+      x: 0,
+      y: 0,
+      z: 0,
+    };
   }
 
   createUI() {
@@ -18,6 +23,11 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
     const moveButton = document.createElement("button");
     moveButton.textContent = "Move";
 
+    // // 新增: 顯示當前位置
+    // const currentPosDiv = document.createElement("div");
+    // currentPosDiv.style.marginTop = "10px";
+    // currentPosDiv.innerHTML = `Current Position: (${this.currentPosition.x}, ${this.currentPosition.y}, ${this.currentPosition.z})`;
+
     moveButton.onclick = () => {
       const x = parseFloat(xInput.querySelector("input").value);
       const y = parseFloat(yInput.querySelector("input").value);
@@ -25,8 +35,9 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
       // const translation = new THREE.Vector3(x, y, z);
       // this.extension.moveElement(this.selectedElement, translation);
       this.extension.moveSelectedElement(x, y, z);
+      // currentPosDiv.innerHTML = `Current Position: (${this.currentPosition.x}, ${this.currentPosition.y}, ${this.currentPosition.z})`;
     };
-
+    // container.appendChild(currentPosDiv);
     container.appendChild(xInput);
     container.appendChild(yInput);
     container.appendChild(zInput);
@@ -61,6 +72,31 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
   // 當選擇改變是，MoveExtension 會呼叫這個方法來更新 selectedElement
   setSelectedElement(dbId) {
     this.selectedElement = dbId;
+    // 當選擇新元件時，獲取其當前位置
+    if (dbId) {
+      const fragIds = [];
+      this.viewer.model
+        .getData()
+        .instanceTree.enumNodeFragments(dbId, (fragId) => {
+          fragIds.push(fragId);
+        });
+
+      if (fragIds.length > 0) {
+        const fragProxy = this.viewer.impl.getFragmentProxy(
+          this.viewer.model,
+          fragIds[0]
+        );
+        fragProxy.getAnimTransform();
+
+        // 更新當前位置
+        this.currentPosition = {
+          x: fragProxy.position.x,
+          y: fragProxy.position.y,
+          z: fragProxy.position.z,
+        };
+        console.log("Current position:", this.currentPosition);
+      }
+    }
   }
 
   // 負責移動元素到指定的 X、Y、Z 座標
@@ -72,17 +108,37 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
         fragIds.push(fragId);
       });
 
+    // 計算新位置（累加）
+    this.currentPosition.x += x;
+    this.currentPosition.y += y;
+    this.currentPosition.z += z;
+
     fragIds.forEach((fragId) => {
       const fragProxy = this.viewer.impl.getFragmentProxy(
         this.viewer.model,
         fragId
       );
       fragProxy.getAnimTransform();
+
+      // 使用累加後的位置
+      fragProxy.position.set(
+        this.currentPosition.x,
+        this.currentPosition.y,
+        this.currentPosition.z
+      );
+
       console.log(
         `fragment is now in (${fragProxy.position.x}, ${fragProxy.position.y}, ${fragProxy.position.z})`
       );
-      fragProxy.position.set(x, y, z);
-      console.log(`Move fragment ${fragId} to (${x}, ${y}, ${z})`);
+      // fragProxy.position.set(x, y, z);
+      fragProxy.position.set(
+        this.currentPosition.x,
+        this.currentPosition.y,
+        this.currentPosition.z
+      );
+      console.log(
+        `Move fragment ${fragId} to (${this.currentPosition.x}, ${this.currentPosition.y}, ${this.currentPosition.z})`
+      );
       fragProxy.updateAnimTransform();
     });
 
