@@ -12,9 +12,9 @@ class DeleteExtension extends BaseExtension {
 
   async load() {
     try {
-      await super.load();
+      super.load();
       this.panel = new DeletePanel(this, "delete-panel", "Delete Elements");
-      await this.panel.initialize();
+      this.panel.initialize();
       this.panel.setVisible(false);
 
       console.log("Create DeleteButton");
@@ -32,11 +32,11 @@ class DeleteExtension extends BaseExtension {
 
   async unload() {
     try {
-      await super.unload();
+      super.unload();
 
       if (this.panel) {
         this.panel.setVisible(false);
-        await this.panel.uninitialize();
+        this.panel.uninitialize();
         this.panel = null;
       }
 
@@ -58,7 +58,7 @@ class DeleteExtension extends BaseExtension {
   }
 
   onToolbarCreated() {
-    console.log("Creayte DeleteButton");
+    console.log("Create DeleteButton");
     this.button = this.createToolbarButton(
       "delete-button",
       "https://img.icons8.com/?size=100&id=67884&format=png", // 刪除圖示

@@ -13,9 +13,9 @@ class MoveExtension extends BaseExtension {
 
   async load() {
     try {
-      await super.load(); // 等待父類別的 load 完成
+      super.load(); // 等待父類別的 load 完成
       this.panel = new MovePanel(this, "move-panel", "Move Elements");
-      await this.panel.initialize(); // 假設 initialize 可能需要時間
+      this.panel.initialize(); // 假設 initialize 可能需要時間
       this.panel.setVisible(false);
 
       this.viewer.addEventListener(
@@ -31,11 +31,11 @@ class MoveExtension extends BaseExtension {
 
   async unload() {
     try {
-      await super.unload(); // 等待父類別的 unload 完成
+      super.unload(); // 等待父類別的 unload 完成
 
       if (this.panel) {
         this.panel.setVisible(false);
-        await this.panel.uninitialize(); // 假設 uninitialize 可能需要時間
+        this.panel.uninitialize(); // 假設 uninitialize 可能需要時間
         this.panel = null;
       }
 
