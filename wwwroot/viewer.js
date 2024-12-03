@@ -1,5 +1,6 @@
 import "./extensions/MoveExtension.js";
 import "./extensions/DeleteExtension.js";
+import "./extensions/HistoryExtension.js";
 
 async function getAccessToken(callback) {
   try {
@@ -23,6 +24,7 @@ export function initViewer(container) {
             "Autodesk.DocumentBrowser",
             "MoveExtension",
             "DeleteExtension",
+            "HistoryExtension",
           ],
         };
         const viewer = new Autodesk.Viewing.GuiViewer3D(container, config);

@@ -62,10 +62,36 @@ export class DeletePanel extends Autodesk.Viewing.UI.PropertyPanel {
 
     this.viewer.hide(dbId);
 
-    // 更新場警
+    // 更新場景
     this.viewer.impl.invalidate(true);
     this.viewer.impl.sceneUpdated(true);
     console.log(`Element ${dbId} has been hidden`);
+
+    const modelUrn = this.viewer.model.getData().urn;
+    fetch("/api/modelActions/delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        urn: modelUrn,
+        dbid: dbId,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          return response.text().then((text) => {
+            throw new Error(text);
+          });
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Delete action recorded successfully:", data);
+      })
+      .catch((error) => {
+        console.error("Error recording delete action:", error);
+      });
 
     // 清除選擇
     this.viewer.clearSelection();
