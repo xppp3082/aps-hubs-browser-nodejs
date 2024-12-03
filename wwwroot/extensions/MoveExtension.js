@@ -103,11 +103,81 @@ class MoveExtension extends BaseExtension {
     }
   }
 
-  moveSelectedElement(x, y, z) {
-    if (this.selectedDbId) {
-      this.panel.moveElement(this.selectedDbId, x, y, z);
+  // moveSelectedElement(x, y, z) {
+  //   if (this.selectedDbId) {
+  //     this.panel.moveElement(this.selectedDbId, x, y, z);
+  //   }
+  // }
+
+  moveSelectedElement = async (x, y, z) => {
+    if (!this.selectedDbId) {
+      console.error("No selected element for moving.");
+      return;
     }
-  }
+
+    const dbId = this.selectedDbId;
+    const modelUrn = this.viewer.model.getData().urn;
+
+    // 檢查資料庫中是否有這個 dbId 的歷史紀錄
+    const response = await fetch(
+      `/api/modelActions/${modelUrn}/history?dbid=${dbId}`
+    );
+    const { data } = await response.json();
+
+    if (data && data.length > 0) {
+      // 如果存在，更新該紀錄
+      const existingAction = data[0]; // 假設只取第一個紀錄
+      const updatedAction = {
+        ...existingAction,
+        x: existingAction.x + x, // 累加 x
+        y: existingAction.y + y, // 累加 y
+        z: existingAction.z + z, // 累加 z
+        timestamp: new Date().toISOString(), // 更新時間戳
+      };
+
+      // 發送更新請求
+      await fetch(`/api/modelActions/update`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedAction),
+      });
+      console.log(`Updated move action for dbId ${dbId}:`, updatedAction);
+    } else {
+      // 如果不存在，則插入新的紀錄
+      const modelUrn = this.viewer.model.getData().urn;
+      fetch("/api/modelActions/move", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          urn: modelUrn,
+          dbid: dbId,
+          x,
+          y,
+          z,
+        }),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            return response.text().then((text) => {
+              throw new Error(text);
+            });
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Move action recorded successfully:", data);
+        })
+        .catch((error) => {
+          console.error("Error recording move action:", error);
+        });
+    }
+    // 更新 Viewer 中的元件位置
+    this.panel.moveElement(dbId, x, y, z);
+  };
 }
 
 Autodesk.Viewing.theExtensionManager.registerExtension(

@@ -143,34 +143,34 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
     });
 
     // 紀錄移動動作
-    const modelUrn = this.viewer.model.getData().urn;
-    fetch("/api/modelActions/move", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        urn: modelUrn,
-        dbid: dbId,
-        x,
-        y,
-        z,
-      }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          return response.text().then((text) => {
-            throw new Error(text);
-          });
-        }
-        return response.json();
-      })
-      .then((data) => {
-        console.log("Move action recorded successfully:", data);
-      })
-      .catch((error) => {
-        console.error("Error recording move action:", error);
-      });
+    // const modelUrn = this.viewer.model.getData().urn;
+    // fetch("/api/modelActions/move", {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({
+    //     urn: modelUrn,
+    //     dbid: dbId,
+    //     x,
+    //     y,
+    //     z,
+    //   }),
+    // })
+    //   .then((response) => {
+    //     if (!response.ok) {
+    //       return response.text().then((text) => {
+    //         throw new Error(text);
+    //       });
+    //     }
+    //     return response.json();
+    //   })
+    //   .then((data) => {
+    //     console.log("Move action recorded successfully:", data);
+    //   })
+    //   .catch((error) => {
+    //     console.error("Error recording move action:", error);
+    //   });
 
     this.viewer.impl.sceneUpdated(true);
   }

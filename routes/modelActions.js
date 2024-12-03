@@ -68,12 +68,43 @@ router.post("/delete", async (req, res) => {
 router.get("/:urn/history", async (req, res) => {
   try {
     const { urn } = req.params;
+    const { dbid } = req.query;
     const Model = getModelForUrn(urn);
-    const actions = await Model.find();
+
+    const query = dbid ? { dbid } : {};
+    const actions = await Model.find(query);
     res.json({ success: true, data: actions });
   } catch (error) {
     console.error(error);
     console.error("Error fetching model actions:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// 更新特定 dbid 的操作動作
+router.put("/update", async (req, res) => {
+  try {
+    const { urn, dbid, x, y, z, timestamp } = req.body;
+    const Model = getModelForUrn(urn);
+
+    // 查找對應的紀錄
+    const action = await Model.findOne({ dbid });
+
+    if (!action) {
+      return res.status(404).json({ error: "Action not found" });
+    }
+
+    // 更新紀錄
+    action.x = x;
+    action.y = y;
+    action.z = z;
+    action.timestamp = timestamp;
+    await action.save();
+
+    console.log("Action updated successfully:", action);
+    res.json({ success: true, data: action });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
