@@ -5,6 +5,7 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
     this.viewer = extension.viewer;
     this.container.style.height = "400px";
     this.container.style.width = "300px";
+    this.container.style.overflow = "hidden";
   }
 
   async createUI() {
@@ -16,6 +17,9 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
     container.style.padding = "1rem";
     container.style.position = "relative";
     container.style.zIndex = "1";
+    container.style.height = "calc(100% - 2rem)"; // 減去 padding 的空間
+    container.style.display = "flex";
+    container.style.flexDirection = "column";
 
     const refreshButton = document.createElement("button");
     refreshButton.textContent = "Refresh";
@@ -24,11 +28,45 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
       this.loadHistory();
     };
 
+    // const historyContainer = document.createElement("div");
+    // // historyContainer.style.height = "320px";
+    // historyContainer.style.flex = "1";
+    // historyContainer.overflowY = "auto";
+    // historyContainer.style.position = "relative"; // 添加定位
+    // historyContainer.style.backgroundColor = "white"; // 確保背景色
+
+    // // 添加滾動條樣式
+    // historyContainer.style.scrollbarWidth = "thin";
+    // historyContainer.style.scrollbarColor = "#888 #f1f1f1"; // Firefox
+    // // Webkit 瀏覽器的滾動條樣式
+    // historyContainer.style.cssText += `
+    //     &::-webkit-scrollbar {
+    //         width: 6px;
+    //     }
+    //     &::-webkit-scrollbar-track {
+    //         background: #f1f1f1;
+    //     }
+    //     &::-webkit-scrollbar-thumb {
+    //         background: #888;
+    //         border-radius: 3px;
+    //     }
+    //     &::-webkit-scrollbar-thumb:hover {
+    //         background: #555;
+    //     }
+    // `;
+
     const historyContainer = document.createElement("div");
-    historyContainer.style.height = "320px";
-    historyContainer.overflowY = "auto";
-    historyContainer.style.position = "relative"; // 添加定位
-    historyContainer.style.backgroundColor = "white"; // 確保背景色
+    historyContainer.style.cssText = `
+        flex: 1;
+        overflow-y: auto;
+        position: relative;
+        background-color: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        padding: 8px;
+        max-height: calc(100% - 50px);
+    `;
+
     this.historyContainer = historyContainer;
 
     container.appendChild(refreshButton);
