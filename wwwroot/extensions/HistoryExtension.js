@@ -22,10 +22,11 @@ class HistoryExtension extends BaseExtension {
     return true;
   }
 
+  // "https://img.icons8.com/?size=50&id=12371&format=png"
   onToolbarCreated() {
     this.button = this.createToolbarButton(
       "history-button",
-      "https://img.icons8.com/?size=50&id=12371&format=png",
+      "https://img.icons8.com/?size=100&id=70301&format=png&color=000000",
       "顯示操作歷史"
     );
 

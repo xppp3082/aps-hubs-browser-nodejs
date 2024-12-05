@@ -12,6 +12,7 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
     // 先清空容器
     this.container.innerHTML = "";
 
+    // 創建主容器
     const container = document.createElement("div");
     container.style.background = "white";
     container.style.padding = "1rem";
@@ -24,20 +25,23 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
     // 建立按鈕容器
     const buttonContainer = document.createElement("div");
     buttonContainer.style.display = "flex";
+    buttonContainer.style.alignItems = "center";
+    buttonContainer.style.justifyContent = "flex-end";
+    buttonContainer.style.padding = "0.5rem";
     buttonContainer.style.gap = "8px";
-    buttonContainer.style.marginBottom = "1rem";
 
     // 刷新按鈕
     const refreshButton = document.createElement("button");
-    refreshButton.textContent = "Refresh";
-    refreshButton.style.marginBottom = "1rem";
+    refreshButton.innerHTML = '<i class="fas fa-sync"></i>'; // 使用 Font Awesome 的刷新圖示
+    // refreshButton.textContent = "Refresh";
     refreshButton.onclick = () => {
       this.loadHistory();
     };
 
     // 同步按鈕
     const syncButton = document.createElement("button");
-    syncButton.textContent = "Sync Positioins";
+    syncButton.innerHTML = '<i class="fa-solid fa-forward-step"></i>'; // 使用 Font Awesome 的同步圖示
+    // syncButton.textContent = "Sync Positioins";
     // syncButton.onclick = async () => {
     //   await this.syncModelWithDatabase();
     // };
