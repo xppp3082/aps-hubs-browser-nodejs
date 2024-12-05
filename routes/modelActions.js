@@ -2,15 +2,34 @@ const express = require("express");
 const mongoose = require("mongoose");
 const router = express.Router();
 
+// const actionSchema = new mongoose.Schema({
+//   action: String,
+//   dbid: String,
+//   x: Number,
+//   y: Number,
+//   z: Number,
+//   timestamp: { type: Date, default: Date.now },
+//   urn: String,
+// });
+
 const actionSchema = new mongoose.Schema({
-  action: String,
-  dbid: String,
+  action: {
+    type: String,
+    required: true,
+  },
+  dbid: {
+    type: Number,
+    required: true,
+  },
   x: Number,
   y: Number,
   z: Number,
   timestamp: { type: Date, default: Date.now },
   urn: String,
 });
+
+// 建立複合索引
+actionSchema.index({ dbid: 1 });
 
 const getModelForUrn = (urn) => {
   const collectionName = `action_${urn}`;

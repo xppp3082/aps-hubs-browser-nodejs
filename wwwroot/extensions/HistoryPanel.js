@@ -21,12 +21,32 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
     container.style.display = "flex";
     container.style.flexDirection = "column";
 
+    // 建立按鈕容器
+    const buttonContainer = document.createElement("div");
+    buttonContainer.style.display = "flex";
+    buttonContainer.style.gap = "8px";
+    buttonContainer.style.marginBottom = "1rem";
+
+    // 刷新按鈕
     const refreshButton = document.createElement("button");
     refreshButton.textContent = "Refresh";
     refreshButton.style.marginBottom = "1rem";
     refreshButton.onclick = () => {
       this.loadHistory();
     };
+
+    // 同步按鈕
+    const syncButton = document.createElement("button");
+    syncButton.textContent = "Sync Positioins";
+    // syncButton.onclick = async () => {
+    //   await this.syncModelWithDatabase();
+    // };
+    syncButton.onclick = () => {
+      this.syncModelWithDatabase();
+    };
+
+    buttonContainer.appendChild(refreshButton);
+    buttonContainer.appendChild(syncButton);
 
     // const historyContainer = document.createElement("div");
     // // historyContainer.style.height = "320px";
@@ -69,7 +89,7 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
 
     this.historyContainer = historyContainer;
 
-    container.appendChild(refreshButton);
+    container.appendChild(buttonContainer);
     container.appendChild(historyContainer);
     this.container.appendChild(container);
 
@@ -139,6 +159,62 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
 
         this.historyContainer.appendChild(item);
       });
+  }
+
+  async syncModelWithDatabase() {
+    const modelUrn = this.viewer.model.getData().urn;
+    try {
+      const response = await fetch(`/api/modelActions/${modelUrn}/history`);
+      if (!response.ok) {
+        throw new Error(`無法獲取歷史記錄：${response.statusText}`);
+      }
+      const { data } = await response.json();
+      console.log("歷史記錄：", data);
+
+      // 建立一個 Map 來存儲每個 dbId 的最新位置
+      const latestPositions = new Map();
+
+      // 遍歷所有動作，找出每個元件的最新位置
+      data.forEach((action) => {
+        if (action.action === "move") {
+          // 從 MongoDB 中取出來的 ID 還要進行型別轉換
+          const dbIdInt = parseInt(action.dbid, 10);
+          latestPositions.set(dbIdInt, {
+            x: action.x,
+            y: action.y,
+            z: action.z,
+          });
+          // console.log(action.dbid);
+        }
+      });
+
+      // 對每個元件應用最新位置
+      for (const [dbId, position] of latestPositions) {
+        const fragIds = [];
+        this.viewer.model
+          .getData()
+          .instanceTree.enumNodeFragments(dbId, (fragId) => {
+            fragIds.push(fragId);
+          });
+
+        console.log(`${position.x}, ${position.y}, ${position.z}`);
+        console.log(fragIds.length);
+        fragIds.forEach((fragId) => {
+          const fragProxy = this.viewer.impl.getFragmentProxy(
+            this.viewer.model,
+            fragId
+          );
+          fragProxy.getAnimTransform();
+          fragProxy.position.set(position.x, position.y, position.z);
+          fragProxy.updateAnimTransform();
+        });
+      }
+      this.viewer.impl.sceneUpdated(true);
+      alert("模型位置已同步完成！");
+    } catch (error) {
+      console.error("同步過程發生錯誤：", error);
+      alert("同步失敗，請查看控制台了解詳情。");
+    }
   }
 
   initialize() {

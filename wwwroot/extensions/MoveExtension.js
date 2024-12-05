@@ -14,14 +14,24 @@ class MoveExtension extends BaseExtension {
   async load() {
     try {
       super.load(); // 等待父類別的 load 完成
-      this.panel = new MovePanel(this, "move-panel", "Move Elements");
-      this.panel.initialize(); // 假設 initialize 可能需要時間
+      // this.panel = new MovePanel(this, "move-panel", "Move Elements");
+
+      // await this.panel.initialize(); // 假設 initialize 可能需要時間
+      await this.initializePanel();
       this.panel.setVisible(false);
 
       this.viewer.addEventListener(
         Autodesk.Viewing.SELECTION_CHANGED_EVENT,
         this.onSelectionChanged.bind(this)
       );
+
+      // // 確保 viewer 已經加載模型
+      // this.viewer.addEventListener(
+      //   Autodesk.Viewing.GEOMETRY_LOADED_EVENT,
+      //   async () => {
+      //     await this.updateViewFromDatabase();
+      //   }
+      // );
       return true;
     } catch (error) {
       console.error("Error loading MoveExtension:", error);
@@ -53,6 +63,15 @@ class MoveExtension extends BaseExtension {
       console.error("Error unloading MoveExtension:", error);
       return false;
     }
+  }
+
+  async initializePanel() {
+    return new Promise((resolve) => {
+      this.panel = new MovePanel(this, "move-panel", "Move Elements");
+      this.panel.initialize(); // 初始化面板
+      this.panel.setVisible(false);
+      resolve();
+    });
   }
 
   onToolbarCreated() {
@@ -178,6 +197,71 @@ class MoveExtension extends BaseExtension {
     // 更新 Viewer 中的元件位置
     this.panel.moveElement(dbId, x, y, z);
   };
+
+  async updateViewFromDatabase() {
+    if (!this.viewer) {
+      console.error("Viewer is not initialized.");
+      return;
+    }
+    // if (!this.panel) {
+    //   console.error("Panel is not initialized.");
+    //   return;
+    // }
+
+    const modelUrn = this.viewer.model.getData().urn;
+    console.log("Model URN From moveExtension.js:", modelUrn);
+    const response = await fetch(`/api/modelActions/${modelUrn}/history`);
+    if (!response.ok)
+      throw new Error(`Failed to fetch history: ${response.statusText}`);
+    const { data } = await response.json();
+    console.log("History data:", data);
+
+    // 根據操作紀錄更新 3D 視圖
+    for (const action of data) {
+      if (action.action === "move") {
+        console.log(action);
+        // this.panel.moveElement(action.dbid, action.x, action.y, action.z);
+        this.moveElement(action.dbid, action.x, action.y, action.z);
+      }
+      // } else if (action.action === "delete") {
+      //   this.panel.deleteElement(action.dbid);
+      // }
+    }
+  }
+
+  // 負責移動元素到指定的 X、Y、Z 座標
+  moveElement(dbId, x, y, z) {
+    console.log("Start moving element:", dbId, x, y, z);
+    try {
+      const fragIds = [];
+      this.viewer.model
+        .getData()
+        .instanceTree.enumNodeFragments(dbId, (fragId) => {
+          fragIds.push(fragId);
+        });
+
+      fragIds.forEach((fragId) => {
+        const fragProxy = this.viewer.impl.getFragmentProxy(
+          this.viewer.model,
+          fragId
+        );
+        fragProxy.getAnimTransform();
+
+        // // 使用累加後的位置
+        // fragProxy.position.set(x, y, z);
+
+        console.log(
+          `fragment is now in (${fragProxy.position.x}, ${fragProxy.position.y}, ${fragProxy.position.z})`
+        );
+        // fragProxy.position.set(x, y, z);
+        fragProxy.position.set(x, y, z);
+        fragProxy.updateAnimTransform();
+      });
+    } catch (error) {
+      console.error("Error moving element:", error);
+    }
+    this.viewer.impl.sceneUpdated(true);
+  }
 }
 
 Autodesk.Viewing.theExtensionManager.registerExtension(
