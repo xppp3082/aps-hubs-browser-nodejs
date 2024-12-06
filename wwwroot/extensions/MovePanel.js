@@ -74,6 +74,9 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
     this.selectedElement = dbId;
     // 當選擇新元件時，獲取其當前位置
     if (dbId) {
+      this.viewer.getProperties(dbId, (props) => {
+        console.log("Revit properties:", props);
+      });
       const fragIds = [];
       this.viewer.model
         .getData()
@@ -95,8 +98,21 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
           z: fragProxy.position.z,
         };
         console.log("Current position:", this.currentPosition);
+
+        // 獲取全域座標
+        const worldPosition = this.getWorldPosition(fragProxy);
+        console.log("World position:", worldPosition);
       }
     }
+  }
+
+  // 取得全域座標的方法
+  getWorldPosition(fragProxy) {
+    const matrix = new THREE.Matrix4();
+    fragProxy.getWorldMatrix(matrix);
+    const worldPosition = new THREE.Vector3();
+    worldPosition.setFromMatrixPosition(matrix); // 從矩陣中提取位置
+    return worldPosition;
   }
 
   // 負責移動元素到指定的 X、Y、Z 座標
@@ -141,36 +157,6 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
       );
       fragProxy.updateAnimTransform();
     });
-
-    // 紀錄移動動作
-    // const modelUrn = this.viewer.model.getData().urn;
-    // fetch("/api/modelActions/move", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify({
-    //     urn: modelUrn,
-    //     dbid: dbId,
-    //     x,
-    //     y,
-    //     z,
-    //   }),
-    // })
-    //   .then((response) => {
-    //     if (!response.ok) {
-    //       return response.text().then((text) => {
-    //         throw new Error(text);
-    //       });
-    //     }
-    //     return response.json();
-    //   })
-    //   .then((data) => {
-    //     console.log("Move action recorded successfully:", data);
-    //   })
-    //   .catch((error) => {
-    //     console.error("Error recording move action:", error);
-    //   });
 
     this.viewer.impl.sceneUpdated(true);
   }

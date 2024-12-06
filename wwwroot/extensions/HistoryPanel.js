@@ -134,11 +134,14 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
         item.style.position = "relative"; // 添加定位
         item.style.zIndex = "2"; // 確保在正確的層級
 
+        let badgeClassName = "";
         // 根據動作類型設置不同的背景顏色
         if (action.action === "move") {
           item.style.backgroundColor = "#e3f2fd"; // 淺藍色
+          badgeClassName = "move-action-badge";
         } else if (action.action === "delete") {
           item.style.backgroundColor = "#ffebee"; // 淺紅色
+          badgeClassName = "delete-action-badge";
         }
 
         const time = new Date(action.timestamp).toLocaleString();
@@ -149,7 +152,10 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
 
         item.innerHTML = `
               <div style="font-size: 12px; color: #666;">${time}</div>
-              <div>${actionText}</div>
+              <div class="action-container">
+                <div class="action-badge ${badgeClassName}">${action.action}</div>
+                <div>${actionText}</div>
+              </div>
             `;
 
         // 點擊歷史記錄項目時高亮顯示對應的元件
