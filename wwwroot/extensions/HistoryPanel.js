@@ -186,15 +186,17 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
 
       // 遍歷所有動作，找出每個元件的最新位置
       data.forEach((action) => {
+        // 從 MongoDB 中取出來的 ID 還要進行型別轉換
+        const dbIdInt = parseInt(action.dbid, 10);
         if (action.action === "move") {
-          // 從 MongoDB 中取出來的 ID 還要進行型別轉換
-          const dbIdInt = parseInt(action.dbid, 10);
           latestPositions.set(dbIdInt, {
             x: action.x,
             y: action.y,
             z: action.z,
           });
           // console.log(action.dbid);
+        } else if (action.action === "delete") {
+          this.viewer.hide(dbIdInt);
         }
       });
 
