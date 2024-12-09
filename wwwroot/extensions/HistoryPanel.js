@@ -3,7 +3,7 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
     super(extension.viewer.container, id, title);
     this.extension = extension;
     this.viewer = extension.viewer;
-    this.container.style.height = "400px";
+    this.container.style.height = "300px";
     this.container.style.width = "350px";
     this.container.style.overflow = "hidden";
   }
@@ -144,10 +144,13 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
           badgeClassName = "delete-action-badge";
         }
 
+        const unitConvertion = 30.48;
         const time = new Date(action.timestamp).toLocaleString();
         const actionText =
           action.action === "move"
-            ? `移動元件 ${action.dbid} 到 (${action.x}, ${action.y}, ${action.z})`
+            ? `移動元件 ${action.dbid} 到 (${action.x * unitConvertion}, ${
+                action.y * unitConvertion
+              }, ${action.z * unitConvertion})`
             : `刪除元件 ${action.dbid}`;
 
         item.innerHTML = `
@@ -155,8 +158,25 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
               <div class="action-container">
                 <div class="action-badge ${badgeClassName}">${action.action}</div>
                 <div>${actionText}</div>
+                <button class="delete-history-button" style="display: none; margin-left: 10px">Delete</button>
               </div>
             `;
+
+        // 刪除按鈕的 hover 效果
+        const deleteButton = item.querySelector(".delete-history-button");
+        item.onmouseover = () => {
+          deleteButton.style.display = "inline"; // 顯示刪除按鈕
+        };
+        item.onmouseout = () => {
+          deleteButton.style.display = "none"; // 隱藏刪除按鈕
+        };
+
+        // 刪除按鈕的點擊事件
+        deleteButton.onclick = async (event) => {
+          event.stopPropagation(); // 防止觸發 item 的點擊事件
+          await this.deleteAction(action._id); // 刪除動作
+          this.loadHistory(); // 重新加載歷史記錄
+        };
 
         // 點擊歷史記錄項目時高亮顯示對應的元件
         item.onclick = () => {
@@ -172,6 +192,76 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
 
         this.historyContainer.appendChild(item);
       });
+  }
+
+  // 刪除動作歷史
+  async deleteAction(id) {
+    const modelUrn = this.viewer.model.getData().urn;
+    try {
+      // 查詢資料庫以獲取該 document 的內容
+      const response = await fetch(
+        `/api/modelActions/${modelUrn}/getById?id=${id}`
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to fetch action: ${response.statusText}`);
+      }
+      const { data } = await response.json();
+      console.log("Action data:", data);
+      if (data.length === 0) {
+        console.error(
+          `Action with ID ${id} not found in the database with collection name: ${modelUrn}.`
+        );
+        return;
+      }
+
+      const action = data[0];
+      // 根據動作進行「反向操作」
+      if (action.action === "delete") {
+        this.viewer.show(action.dbid);
+        console.log(`Element with ID ${action.dbid} is now visible.`);
+      } else if (action.action === "move") {
+        // 將元件移回原來的位置
+        const reverseX = 0;
+        const reverseY = 0;
+        const reverseZ = 0;
+
+        this.viewer.model
+          .getData()
+          .instanceTree.enumNodeFragments(action.dbid, (fragId) => {
+            const fragProxy = this.viewer.impl.getFragmentProxy(
+              this.viewer.model,
+              fragId
+            );
+            fragProxy.getAnimTransform();
+            fragProxy.position.set(reverseX, reverseY, reverseZ);
+            fragProxy.updateAnimTransform();
+          });
+        console.log(
+          `Element with ID ${action.dbid} has been moved back to (${reverseX}, ${reverseY}, ${reverseZ}).`
+        );
+      }
+
+      //反向操作結束後，刪除紀錄
+      const deleteResponse = await fetch(`/api/modelActions/deleteById`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          urn: modelUrn,
+          id: id,
+        }),
+      });
+
+      if (!deleteResponse.ok) {
+        throw new Error(
+          `Failed to delete action: ${deleteResponse.statusText}`
+        );
+      }
+      console.log(`Action with ID ${id} has been deleted from the database.`);
+    } catch (error) {
+      console.error("Error deleting action:", error);
+    }
   }
 
   async syncModelWithDatabase() {
