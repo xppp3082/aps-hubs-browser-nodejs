@@ -95,13 +95,21 @@ class DeleteExtension extends BaseExtension {
 
   // 鍵盤事件處理函數
   onKeyDown(event) {
-    if (event.key === "Delete" && this.selectedDbId) {
-      const confirmDelete = window.confirm(
-        "Are you sure you want to delete the selected element?"
-      );
-      if (confirmDelete) {
+    if (event.key === "Delete") {
+      if (this.selectedDbId) {
         this.deleteElement(this.selectedDbId);
+        // return;
+        // const confirmDelete = window.confirm(
+        //   "Are you sure you want to delete the selected element?"
+        // );
+        // if (confirmDelete) {
+        //   this.deleteElement(this.selectedDbId);
+        //   return;
+        // }
       }
+      // else {
+      //   alert("No element selected.");
+      // }
     }
   }
 
