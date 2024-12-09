@@ -32,10 +32,11 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
       const x = parseFloat(xInput.querySelector("input").value) / 30.48;
       const y = parseFloat(yInput.querySelector("input").value) / 30.48;
       const z = parseFloat(zInput.querySelector("input").value) / 30.48;
-      // const translation = new THREE.Vector3(x, y, z);
-      // this.extension.moveElement(this.selectedElement, translation);
-      this.extension.moveSelectedElement(x, y, z);
-      // currentPosDiv.innerHTML = `Current Position: (${this.currentPosition.x}, ${this.currentPosition.y}, ${this.currentPosition.z})`;
+      if (this.elementId) {
+        this.extension.moveSelectedElement(x, y, z, this.elementId); // 傳遞 elementId
+      } else {
+        console.error("Element ID is not set.");
+      }
     };
     // container.appendChild(currentPosDiv);
     container.appendChild(xInput);
@@ -76,6 +77,13 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
     if (dbId) {
       this.viewer.getProperties(dbId, (props) => {
         console.log("Revit properties:", props);
+        const elementIdProperty = props.properties.find(
+          (prop) => prop.attributeName === "ElementId"
+        );
+        if (elementIdProperty) {
+          this.elementId = elementIdProperty.displayValue; // 儲存 elementId
+          console.log("Element ID:", this.elementId);
+        }
       });
       const fragIds = [];
       this.viewer.model

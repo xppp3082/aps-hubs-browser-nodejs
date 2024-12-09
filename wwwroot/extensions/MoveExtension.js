@@ -122,13 +122,7 @@ class MoveExtension extends BaseExtension {
     }
   }
 
-  // moveSelectedElement(x, y, z) {
-  //   if (this.selectedDbId) {
-  //     this.panel.moveElement(this.selectedDbId, x, y, z);
-  //   }
-  // }
-
-  moveSelectedElement = async (x, y, z) => {
+  moveSelectedElement = async (x, y, z, elementId) => {
     if (!this.selectedDbId) {
       console.error("No selected element for moving.");
       return;
@@ -177,6 +171,7 @@ class MoveExtension extends BaseExtension {
           x,
           y,
           z,
+          elementId: elementId,
         }),
       })
         .then((response) => {

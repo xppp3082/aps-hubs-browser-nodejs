@@ -65,17 +65,27 @@ class DeleteExtension extends BaseExtension {
       "Delete Model Button"
     );
     this.button.onClick = () => {
-      if (!this.panel) {
-        this.panel = new DeletePanel(this, "delete-panel", "Delete Elements");
-        this.panel.setVisible(false);
-        this.panel.initialize();
+      if (this.selectedDbId) {
+        const confirmDelete = window.confirm(
+          "Are you sure you want to delete the selected element?"
+        );
+        if (confirmDelete) {
+          this.deleteElement(this.selectedDbId);
+        }
+      } else {
+        alert("No element selected.");
       }
-      this.panel.setVisible(!this.panel.isVisible());
-      this.button.setState(
-        this.panel.isVisible()
-          ? Autodesk.Viewing.UI.Button.State.ACTIVE
-          : Autodesk.Viewing.UI.Button.State.INACTIVE
-      );
+      // if (!this.panel) {
+      //   this.panel = new DeletePanel(this, "delete-panel", "Delete Elements");
+      //   this.panel.setVisible(false);
+      //   this.panel.initialize();
+      // }
+      // this.panel.setVisible(!this.panel.isVisible());
+      // this.button.setState(
+      //   this.panel.isVisible()
+      //     ? Autodesk.Viewing.UI.Button.State.ACTIVE
+      //     : Autodesk.Viewing.UI.Button.State.INACTIVE
+      // );
     };
   }
 
@@ -105,6 +115,61 @@ class DeleteExtension extends BaseExtension {
     if (this.selectedDbId && this.panel) {
       this.panel.deleteElement(this.selectedDbId);
     }
+  }
+
+  deleteElement(dbId) {
+    if (dbId === null) {
+      console.error("No element selected");
+      return;
+    }
+    const fragIds = [];
+    this.viewer.model
+      .getData()
+      .instanceTree.enumNodeFragments(dbId, (fragId) => {
+        fragIds.push(fragId);
+      });
+
+    // // 隱藏所有相關的片段 (沒辦法直接刪除嗎?)
+    // fragIds.forEach((fragId) => {
+    //   this.viewer.hide(dbId);
+    // });
+
+    this.viewer.hide(dbId);
+
+    // 更新場景
+    this.viewer.impl.invalidate(true);
+    this.viewer.impl.sceneUpdated(true);
+    console.log(`Element ${dbId} has been hidden`);
+
+    const modelUrn = this.viewer.model.getData().urn;
+    fetch("/api/modelActions/delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        urn: modelUrn,
+        dbid: dbId,
+        elementId: this.elementId,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          return response.text().then((text) => {
+            throw new Error(text);
+          });
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Delete action recorded successfully:", data);
+      })
+      .catch((error) => {
+        console.error("Error recording delete action:", error);
+      });
+
+    // 清除選擇
+    this.viewer.clearSelection();
   }
 }
 

@@ -45,6 +45,17 @@ export class DeletePanel extends Autodesk.Viewing.UI.PropertyPanel {
 
   setSelectedElement(dbId) {
     this.selectedElement = dbId;
+    if (dbId) {
+      this.viewer.getProperties(dbId, (props) => {
+        const elementIdProperty = props.properties.find(
+          (prop) => prop.attributeName === "ElementId"
+        );
+        if (elementIdProperty) {
+          this.elementId = elementIdProperty.displayValue; // 儲存 elementId
+          console.log("Element ID:", this.elementId);
+        }
+      });
+    }
   }
 
   deleteElement(dbId) {
@@ -76,6 +87,7 @@ export class DeletePanel extends Autodesk.Viewing.UI.PropertyPanel {
       body: JSON.stringify({
         urn: modelUrn,
         dbid: dbId,
+        elementId: this.elementId,
       }),
     })
       .then((response) => {

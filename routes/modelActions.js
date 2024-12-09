@@ -26,6 +26,7 @@ const actionSchema = new mongoose.Schema({
   z: Number,
   timestamp: { type: Date, default: Date.now },
   urn: String,
+  elementId: { type: String, index: true }, // 儲存 elementId，並添加索引
 });
 
 // 建立複合索引
@@ -43,7 +44,7 @@ const getModelForUrn = (urn) => {
 
 router.post("/move", async (req, res) => {
   try {
-    const { urn, dbid, x, y, z } = req.body;
+    const { urn, dbid, x, y, z, elementId } = req.body;
     const Model = getModelForUrn(urn);
 
     const action = new Model({
@@ -53,6 +54,7 @@ router.post("/move", async (req, res) => {
       y,
       z,
       urn,
+      elementId, // 儲存 elementId
     });
     await action.save();
     console.log("Action saved successfully:", action);
@@ -65,13 +67,14 @@ router.post("/move", async (req, res) => {
 
 router.post("/delete", async (req, res) => {
   try {
-    const { urn, dbid } = req.body;
+    const { urn, dbid, elementId } = req.body;
     const Model = getModelForUrn(urn);
 
     const action = new Model({
       action: "delete",
       dbid,
       urn,
+      elementId, // 儲存 elementId
     });
 
     await action.save();
