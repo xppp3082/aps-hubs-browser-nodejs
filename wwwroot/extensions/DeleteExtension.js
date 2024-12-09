@@ -22,6 +22,10 @@ class DeleteExtension extends BaseExtension {
         Autodesk.Viewing.SELECTION_CHANGED_EVENT,
         this.onSelectionChanged.bind(this)
       );
+
+      // 監聽鍵盤事件
+      window.addEventListener("keydown", this.onKeyDown.bind(this));
+
       console.log("DeleteExtension loaded");
       return true;
     } catch (error) {
@@ -87,6 +91,18 @@ class DeleteExtension extends BaseExtension {
       //     : Autodesk.Viewing.UI.Button.State.INACTIVE
       // );
     };
+  }
+
+  // 鍵盤事件處理函數
+  onKeyDown(event) {
+    if (event.key === "Delete" && this.selectedDbId) {
+      const confirmDelete = window.confirm(
+        "Are you sure you want to delete the selected element?"
+      );
+      if (confirmDelete) {
+        this.deleteElement(this.selectedDbId);
+      }
+    }
   }
 
   onSelectionChanged(event) {
