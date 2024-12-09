@@ -124,3 +124,11 @@ html {
   border-radius: 0.2rem;
   height: 60%;
 }
+
+/* .delete-history-button {
+  height: 60%;
+} */
+
+.delete-history-icon {
+  font-size: 1rem; /* 調整圖示大小 */
+}

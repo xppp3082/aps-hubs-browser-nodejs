@@ -52,33 +52,6 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
     buttonContainer.appendChild(refreshButton);
     buttonContainer.appendChild(syncButton);
 
-    // const historyContainer = document.createElement("div");
-    // // historyContainer.style.height = "320px";
-    // historyContainer.style.flex = "1";
-    // historyContainer.overflowY = "auto";
-    // historyContainer.style.position = "relative"; // 添加定位
-    // historyContainer.style.backgroundColor = "white"; // 確保背景色
-
-    // // 添加滾動條樣式
-    // historyContainer.style.scrollbarWidth = "thin";
-    // historyContainer.style.scrollbarColor = "#888 #f1f1f1"; // Firefox
-    // // Webkit 瀏覽器的滾動條樣式
-    // historyContainer.style.cssText += `
-    //     &::-webkit-scrollbar {
-    //         width: 6px;
-    //     }
-    //     &::-webkit-scrollbar-track {
-    //         background: #f1f1f1;
-    //     }
-    //     &::-webkit-scrollbar-thumb {
-    //         background: #888;
-    //         border-radius: 3px;
-    //     }
-    //     &::-webkit-scrollbar-thumb:hover {
-    //         background: #555;
-    //     }
-    // `;
-
     const historyContainer = document.createElement("div");
     historyContainer.style.cssText = `
         flex: 1;
@@ -158,12 +131,15 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
               <div class="action-container">
                 <div class="action-badge ${badgeClassName}">${action.action}</div>
                 <div>${actionText}</div>
-                <button class="delete-history-button" style="display: none; margin-left: 10px">Delete</button>
+                  <span class="delete-history-icon" style="color: red; cursor: pointer; margin-left: 10px;">
+                      <i class="fas fa-times"></i> <!-- 使用 Font Awesome 的叉叉圖示 -->
+                  </span>              
               </div>
             `;
 
-        // 刪除按鈕的 hover 效果
-        const deleteButton = item.querySelector(".delete-history-button");
+        // // 刪除按鈕的 hover 效果
+        // const deleteButton = item.querySelector(".delete-history-button");
+        const deleteButton = item.querySelector(".delete-history-icon");
         item.onmouseover = () => {
           deleteButton.style.display = "inline"; // 顯示刪除按鈕
         };
@@ -221,9 +197,7 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
         console.log(`Element with ID ${action.dbid} is now visible.`);
       } else if (action.action === "move") {
         // 將元件移回原來的位置
-        const reverseX = 0;
-        const reverseY = 0;
-        const reverseZ = 0;
+        const resetPostision = { x: 0, y: 0, z: 0 };
 
         this.viewer.model
           .getData()
@@ -233,11 +207,15 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
               fragId
             );
             fragProxy.getAnimTransform();
-            fragProxy.position.set(reverseX, reverseY, reverseZ);
+            fragProxy.position.set(
+              resetPostision.x,
+              resetPostision.y,
+              resetPostision.z
+            );
             fragProxy.updateAnimTransform();
           });
         console.log(
-          `Element with ID ${action.dbid} has been moved back to (${reverseX}, ${reverseY}, ${reverseZ}).`
+          `Element with ID ${action.dbid} has been moved back to (${resetPostision.x}, ${resetPostision.x}, ${resetPostision.x}).`
         );
       }
 
