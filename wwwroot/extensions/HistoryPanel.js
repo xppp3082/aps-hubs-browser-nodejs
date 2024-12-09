@@ -4,7 +4,7 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
     this.extension = extension;
     this.viewer = extension.viewer;
     this.container.style.height = "400px";
-    this.container.style.width = "300px";
+    this.container.style.width = "350px";
     this.container.style.overflow = "hidden";
   }
 
@@ -162,6 +162,9 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
         item.onclick = () => {
           this.viewer.clearSelection();
           if (action.action === "move") {
+            this.viewer.select(action.dbid);
+            this.viewer.fitToView([action.dbid]);
+          } else if (action.action === "delete") {
             this.viewer.select(action.dbid);
             this.viewer.fitToView([action.dbid]);
           }

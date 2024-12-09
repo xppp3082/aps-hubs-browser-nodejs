@@ -114,6 +114,7 @@ html {
   background-color: #dc3545;
   padding: 0 0.5rem;
   border-radius: 0.2rem;
+  height: 60%;
 }
 
 .move-action-badge {
@@ -121,4 +122,5 @@ html {
   background-color: #007bff;
   padding: 0 0.5rem;
   border-radius: 0.2rem;
+  height: 60%;
 }

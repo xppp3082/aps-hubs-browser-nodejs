@@ -29,9 +29,9 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
     // currentPosDiv.innerHTML = `Current Position: (${this.currentPosition.x}, ${this.currentPosition.y}, ${this.currentPosition.z})`;
 
     moveButton.onclick = () => {
-      const x = parseFloat(xInput.querySelector("input").value);
-      const y = parseFloat(yInput.querySelector("input").value);
-      const z = parseFloat(zInput.querySelector("input").value);
+      const x = parseFloat(xInput.querySelector("input").value) / 30.48;
+      const y = parseFloat(yInput.querySelector("input").value) / 30.48;
+      const z = parseFloat(zInput.querySelector("input").value) / 30.48;
       // const translation = new THREE.Vector3(x, y, z);
       // this.extension.moveElement(this.selectedElement, translation);
       this.extension.moveSelectedElement(x, y, z);
