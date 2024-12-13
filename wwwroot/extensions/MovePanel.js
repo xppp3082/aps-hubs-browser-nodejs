@@ -76,13 +76,13 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
     // 當選擇新元件時，獲取其當前位置
     if (dbId) {
       this.viewer.getProperties(dbId, (props) => {
-        console.log("Revit properties:", props);
+        // console.log("Revit properties:", props);
         const elementIdProperty = props.properties.find(
           (prop) => prop.attributeName === "ElementId"
         );
         if (elementIdProperty) {
           this.elementId = elementIdProperty.displayValue; // 儲存 elementId
-          console.log("Element ID:", this.elementId);
+          // console.log("Element ID:", this.elementId);
         }
       });
       const fragIds = [];
@@ -105,11 +105,11 @@ export class MovePanel extends Autodesk.Viewing.UI.PropertyPanel {
           y: fragProxy.position.y,
           z: fragProxy.position.z,
         };
-        console.log("Current position:", this.currentPosition);
+        // console.log("Current position:", this.currentPosition);
 
         // 獲取全域座標
         const worldPosition = this.getWorldPosition(fragProxy);
-        console.log("World position:", worldPosition);
+        // console.log("World position:", worldPosition);
       }
     }
   }

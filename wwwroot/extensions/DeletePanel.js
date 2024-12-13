@@ -52,7 +52,7 @@ export class DeletePanel extends Autodesk.Viewing.UI.PropertyPanel {
         );
         if (elementIdProperty) {
           this.elementId = elementIdProperty.displayValue; // 儲存 elementId
-          console.log("Element ID:", this.elementId);
+          // console.log("Element ID:", this.elementId);
         }
       });
     }

@@ -17,7 +17,6 @@ class DeleteExtension extends BaseExtension {
       this.panel.initialize();
       this.panel.setVisible(false);
 
-      console.log("Create DeleteButton");
       this.viewer.addEventListener(
         Autodesk.Viewing.SELECTION_CHANGED_EVENT,
         this.onSelectionChanged.bind(this)
@@ -25,8 +24,6 @@ class DeleteExtension extends BaseExtension {
 
       // 監聽鍵盤事件
       window.addEventListener("keydown", this.onKeyDown.bind(this));
-
-      console.log("DeleteExtension loaded");
       return true;
     } catch (error) {
       console.error("Error loading DeleteExtension:", error);
@@ -53,7 +50,7 @@ class DeleteExtension extends BaseExtension {
         Autodesk.Viewing.SELECTION_CHANGED_EVENT,
         this.onSelectionChanged.bind(this)
       );
-      console.log("DeleteExtension unloaded");
+      // console.log("DeleteExtension unloaded");
       return true;
     } catch (err) {
       console.error("Error unloading DeleteExtension:", error);
@@ -62,7 +59,6 @@ class DeleteExtension extends BaseExtension {
   }
 
   onToolbarCreated() {
-    console.log("Create DeleteButton");
     this.button = this.createToolbarButton(
       "delete-button",
       "https://img.icons8.com/?size=100&id=67884&format=png", // 刪除圖示
@@ -104,7 +100,7 @@ class DeleteExtension extends BaseExtension {
 
   onSelectionChanged(event) {
     if (!this.panel) {
-      console.log("Panel not found, initializing...");
+      // console.log("Panel not found, initializing...");
       this.panel = new DeletePanel(this, "delete-panel", "Delete Elements");
       this.panel.initialize();
     }
@@ -112,12 +108,8 @@ class DeleteExtension extends BaseExtension {
     const dbIds = event.dbIdArray || [];
     if (dbIds.length > 0) {
       this.selectedDbId = dbIds[0];
-      console.log(
-        "Message from delete extension Selection changed:",
-        this.selectedDbId
-      );
       this.panel.setSelectedElement(this.selectedDbId);
-      console.log(`Selection changed: ${this.selectedDbId}`);
+      // console.log(`Selection changed: ${this.selectedDbId}`);
     } else {
       this.selectedDbId = null;
       this.panel.setSelectedElement(null);

@@ -105,17 +105,17 @@ class MoveExtension extends BaseExtension {
 
     // 檢查 panel 是否存在，如果不存在就重新初始化
     if (!this.panel) {
-      console.log("Panel not found, initializing...");
+      // console.log("Panel not found, initializing...");
       this.panel = new MovePanel(this, "move-panel", "Move Elements");
       this.panel.initialize();
     }
 
     const dbIds = event.dbIdArray || [];
-    console.log(`Selection changed: ${dbIds[0]}`);
+    // console.log(`Selection changed: ${dbIds[0]}`);
     if (dbIds.length > 0) {
       this.selectedDbId = dbIds[0];
       this.panel.setSelectedElement(this.selectedDbId);
-      console.log(`Selected object: ${this.selectedDbId}`);
+      // console.log(`Selected object: ${this.selectedDbId}`);
     } else {
       this.selectedDbId = null;
       this.panel.setSelectedElement(null);

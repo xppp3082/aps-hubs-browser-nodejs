@@ -9,7 +9,6 @@ class HistoryExtension extends BaseExtension {
 
   load() {
     super.load();
-    console.log("HistoryExtension loaded.");
     return true;
   }
 

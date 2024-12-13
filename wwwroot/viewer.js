@@ -1,6 +1,7 @@
 import "./extensions/MoveExtension.js";
 import "./extensions/DeleteExtension.js";
 import "./extensions/HistoryExtension.js";
+import "./extensions/TransformExtension.js";
 
 async function getAccessToken(callback) {
   try {
@@ -39,7 +40,23 @@ export function initViewer(container) {
 export function loadModel(viewer, urn) {
   function onDocumentLoadSuccess(doc) {
     viewer.loadDocumentNode(doc, doc.getRoot().getDefaultGeometry());
+    // var viewables = doc.getRoot().getDefaultGeometry();
+    // viewer.loadDocumentNode(doc, viewables).then((i) => {
+    //   // documented loaded, any action?
+    //   var ViewerInstance = new CustomEvent("viewerinstance", {
+    //     detail: { viewer: viewer },
+    //   });
+    //   document.dispatchEvent(ViewerInstance);
+    //   var LoadExtensionEvent = new CustomEvent("loadextension", {
+    //     detail: {
+    //       extension: "TransformationExtension2",
+    //       viewer: viewer,
+    //     },
+    //   });
+    //   document.dispatchEvent(LoadExtensionEvent);
+    // });
   }
+
   function onDocumentLoadFailure(code, message) {
     alert("Could not load model. See console for more details.");
     console.error(message);

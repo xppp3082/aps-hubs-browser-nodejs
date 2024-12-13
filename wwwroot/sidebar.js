@@ -90,7 +90,7 @@ export function initTree(selector, onSelectionChanged) {
   tree.on("node.click", function (event, node) {
     event.preventTreeDefault();
     const tokens = node.id.split("|");
-    console.log("Selected:", tokens);
+    // console.log("Selected:", tokens);
     if (tokens[0] === "version") {
       onSelectionChanged(tokens[1]);
     }

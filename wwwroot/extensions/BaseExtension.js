@@ -13,23 +13,17 @@ export class BaseExtension extends Autodesk.Viewing.Extension {
   }
 
   load() {
-    console.log(
-      "load() this instanceof BaseExtension:",
-      this instanceof BaseExtension
-    );
-    console.log("load() this:", this);
-
-    this.viewer.addEventListener(
-      Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT,
-      (ev) => {
-        console.log(
-          "Event callback this instanceof BaseExtension:",
-          this instanceof BaseExtension
-        );
-        console.log("Event callback this:", this);
-        this._onObjectTreeCreated(ev);
-      }
-    );
+    // this.viewer.addEventListener(
+    //   Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT,
+    //   (ev) => {
+    //     // console.log(
+    //     //   "Event callback this instanceof BaseExtension:",
+    //     //   this instanceof BaseExtension
+    //     // );
+    //     // console.log("Event callback this:", this);
+    //     this._onObjectTreeCreated(ev);
+    //   }
+    // );
 
     this.viewer.addEventListener(
       Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT,
