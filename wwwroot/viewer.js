@@ -1,7 +1,8 @@
 import "./extensions/MoveExtension.js";
 import "./extensions/DeleteExtension.js";
 import "./extensions/HistoryExtension.js";
-import "./extensions/TransformExtension.js";
+import "./extensions/TransformControlExtension.js";
+import "./extensions/TransformExtension/contents/main.js";
 
 async function getAccessToken(callback) {
   try {
@@ -26,6 +27,8 @@ export function initViewer(container) {
             "MoveExtension",
             "DeleteExtension",
             "HistoryExtension",
+            "TransformControlExtension",
+            "TransformationExtension2",
           ],
         };
         const viewer = new Autodesk.Viewing.GuiViewer3D(container, config);
