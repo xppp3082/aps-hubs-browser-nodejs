@@ -182,6 +182,104 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     }
 
     ///////////////////////////////////////////////////////////////////////////
+    // handle arrow click to show input box
+    //
+    ///////////////////////////////////////////////////////////////////////////
+    function onArrowClick(direction, screenPoint) {
+      alert("onArrowClick: " + direction);
+      const inputBox = document.createElement("input");
+      inputBox.type = "number";
+      inputBox.value = 0;
+      inputBox.placeholder = "請輸入移動距離";
+
+      // 設置輸入框的位置為滑鼠點擊的位置
+      inputBox.style.position = "absolute";
+      inputBox.style.left = `${screenPoint.x}px`;
+      inputBox.style.top = `${screenPoint.y}px`;
+      inputBox.style.zIndex = 1000; // 設置較高的 z-index
+
+      document.body.appendChild(inputBox);
+      inputBox.focus();
+
+      // 禁用 transformControl 的拖拉功能
+      _transformControlTx.enabled = false;
+
+      inputBox.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          const distance = parseFloat(inputBox.value);
+          if (!isNaN(distance)) {
+            moveElement(direction, distance);
+          } else {
+            console.error("Invalid input, please enter a number");
+          }
+          document.body.removeChild(inputBox);
+          // _transformControlTx.enabled = true;
+        }
+      });
+      // 全局監聽鍵盤事件
+      const handleGlobalKeyDown = (event) => {
+        if (event.key === "Escape") {
+          console.log("Escape");
+          if (inputBox) {
+            document.body.removeChild(inputBox);
+          }
+          document.removeEventListener("keydown", handleGlobalKeyDown); // 移除全局事件監聽
+          // _transformControlTx.enabled = true;
+        }
+      };
+
+      document.addEventListener("keydown", handleGlobalKeyDown); // 添加全局事件監聽
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // move element based on direction and distance
+    //
+    ///////////////////////////////////////////////////////////////////////////
+    function moveElement(direction, distance) {
+      const moveVector = new THREE.Vector3();
+      console.log("moveElement: ", direction, distance);
+      switch (direction) {
+        case "X":
+          moveVector.set(distance, 0, 0);
+          break;
+        case "Y":
+          moveVector.set(0, distance, 0);
+          break;
+        case "Z":
+          moveVector.set(0, 0, distance);
+          break;
+        default:
+          console.error("Invalid direction");
+          return;
+      }
+      _transformMesh.position.add(moveVector);
+      onTxChange(); // 更新位置
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // handle button down to detect arrow clicks
+    //
+    ///////////////////////////////////////////////////////////////////////////
+    this.handleButtonDown = function (event, button) {
+      _hitPoint = getHitPoint(event);
+      _isDragging = true;
+      if (_transformControlTx.onPointerDown(event)) {
+        console.log("onPointerDown: ", event);
+        // const direction = detectArrowClick(event);
+        // if (direction) {
+        //   onArrowClick(direction);
+        //   return true;
+        // }
+        const axis = _transformControlTx.axis;
+        if (axis) {
+          onArrowClick(axis, { x: event.clientX, y: event.clientY });
+          return true;
+        }
+      }
+      return false;
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
     // returns all transformed meshes
     //
     ///////////////////////////////////////////////////////////////////////////
@@ -318,16 +416,16 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     //
     //
     ///////////////////////////////////////////////////////////////////////////
-    this.handleButtonDown = function (event, button) {
-      _hitPoint = getHitPoint(event);
+    // this.handleButtonDown = function (event, button) {
+    //   _hitPoint = getHitPoint(event);
 
-      _isDragging = true;
+    //   _isDragging = true;
 
-      if (_transformControlTx.onPointerDown(event)) return true;
+    //   if (_transformControlTx.onPointerDown(event)) return true;
 
-      //return _transRotControl.onPointerDown(event);
-      return false;
-    };
+    //   //return _transRotControl.onPointerDown(event);
+    //   return false;
+    // };
 
     ///////////////////////////////////////////////////////////////////////////
     //
