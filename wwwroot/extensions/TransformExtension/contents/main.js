@@ -41,6 +41,11 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
 
     var _transformControlTx = null;
 
+    var _mouseDownTime = 0;
+    var _clickThreshold = 200; // 設定點擊閾值為 200 毫秒
+    var _clickAxis = null;
+    var _timeOut = null;
+
     ///////////////////////////////////////////////////////////////////////////
     // Creates a dummy mesh to attach control to
     //
@@ -93,11 +98,20 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     // item selected callback
     //
     ///////////////////////////////////////////////////////////////////////////
+    let _selectedDbId = null;
     function onItemSelected(event) {
       _selectedFragProxyMap = {};
-
+      // 取得當前選取物件的 dbId
+      console.log("onItemSelected: ", event);
+      const dbIds = event.dbIdArray;
+      if (dbIds && dbIds.length > 0) {
+        const dbId = dbIds[0];
+        _selectedDbId = dbId;
+        viewer.getProperties(dbId, (props) => {
+          console.log("selected object properties: ", props);
+        });
+      }
       //component unselected
-
       if (!event.fragIdsArray.length) {
         _hitPoint = null;
 
@@ -189,8 +203,8 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
       alert("onArrowClick: " + direction);
       const inputBox = document.createElement("input");
       inputBox.type = "number";
-      inputBox.value = 0;
-      inputBox.placeholder = "請輸入移動距離";
+      // inputBox.value = 0;
+      inputBox.placeholder = "請輸入移動距離 (cm)";
 
       // 設置輸入框的位置為滑鼠點擊的位置
       inputBox.style.position = "absolute";
@@ -220,7 +234,7 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
       const handleGlobalKeyDown = (event) => {
         if (event.key === "Escape") {
           console.log("Escape");
-          if (inputBox) {
+          if (inputBox !== null) {
             document.body.removeChild(inputBox);
           }
           document.removeEventListener("keydown", handleGlobalKeyDown); // 移除全局事件監聽
@@ -237,16 +251,17 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     ///////////////////////////////////////////////////////////////////////////
     function moveElement(direction, distance) {
       const moveVector = new THREE.Vector3();
+      const convertedDistance = convertUnitBasedOnModel(distance);
       console.log("moveElement: ", direction, distance);
       switch (direction) {
         case "X":
-          moveVector.set(distance, 0, 0);
+          moveVector.set(convertedDistance, 0, 0);
           break;
         case "Y":
-          moveVector.set(0, distance, 0);
+          moveVector.set(0, convertedDistance, 0);
           break;
         case "Z":
-          moveVector.set(0, 0, distance);
+          moveVector.set(0, 0, convertedDistance);
           break;
         default:
           console.error("Invalid direction");
@@ -254,31 +269,73 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
       }
       _transformMesh.position.add(moveVector);
       onTxChange(); // 更新位置
+      updateHistory(moveVector);
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // handle button down to detect arrow clicks
-    //
-    ///////////////////////////////////////////////////////////////////////////
-    this.handleButtonDown = function (event, button) {
-      _hitPoint = getHitPoint(event);
-      _isDragging = true;
-      if (_transformControlTx.onPointerDown(event)) {
-        console.log("onPointerDown: ", event);
-        // const direction = detectArrowClick(event);
-        // if (direction) {
-        //   onArrowClick(direction);
-        //   return true;
-        // }
-        const axis = _transformControlTx.axis;
-        if (axis) {
-          onArrowClick(axis, { x: event.clientX, y: event.clientY });
-          return true;
-        }
+    async function updateHistory(moveVector) {
+      const modelUrn = viewer.model.getData().urn;
+      const response = await fetch(
+        `/api/modelActions/${modelUrn}/history?dbid=${_selectedDbId}`
+      );
+      const { data } = await response.json();
+      if (data && data.length > 0) {
+        const existingAction = data[0];
+        const updatedAction = {
+          ...existingAction,
+          x: existingAction.x + moveVector.x,
+          y: existingAction.y + moveVector.y,
+          z: existingAction.z + moveVector.z,
+          timestamp: new Date().toISOString(),
+        };
+        await fetch(`/api/modelActions/update`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedAction),
+        });
+        console.log(
+          `Updated move action for dbId ${_selectedDbId}:`,
+          updatedAction
+        );
+      } else {
+        //如果不存在，則插入新的紀錄
+        const modelUrn = viewer.model.getData().urn;
+        fetch(`/api/modelActions/move`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            urn: modelUrn,
+            dbid: _selectedDbId,
+            x: moveVector.x,
+            y: moveVector.y,
+            z: moveVector.z,
+          }),
+        });
       }
-      return false;
-    };
+    }
 
+    function convertUnitBasedOnModel(distance) {
+      const modelUnit = viewer.model.getUnitString();
+      switch (modelUnit) {
+        case "mm":
+          return distance * 10;
+        case "cm":
+          return distance * 1;
+        case "m":
+          return distance / 100;
+        case "km":
+          return distance / 100000;
+        case "ft":
+          return distance / 30.48;
+        case "in":
+          return distance / 2.54;
+        default:
+          return distance;
+      }
+    }
     ///////////////////////////////////////////////////////////////////////////
     // returns all transformed meshes
     //
@@ -342,6 +399,14 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
       _transformMesh = createTransformMesh();
 
       _transformControlTx.attach(_transformMesh);
+
+      _transformControlTx.addEventListener("mouseDown", (event) => {
+        console.log("transformTool mouseDown: ", event);
+        if (event.button == 1 || event.buttons == 4) {
+          const axis = _transformControlTx.axis;
+          console.log("transformTool mouseDown with axis: ", axis);
+        }
+      });
 
       viewer.addEventListener(
         Autodesk.Viewing.SELECTION_CHANGED_EVENT,
@@ -413,10 +478,11 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     };
 
     ///////////////////////////////////////////////////////////////////////////
-    //
+    // Original version of handleButtonDown
     //
     ///////////////////////////////////////////////////////////////////////////
     // this.handleButtonDown = function (event, button) {
+    //   console.log("transformTool handleButtonDown:", this);
     //   _hitPoint = getHitPoint(event);
 
     //   _isDragging = true;
@@ -428,9 +494,32 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     // };
 
     ///////////////////////////////////////////////////////////////////////////
-    //
+    // handle button down to detect arrow clicks
     //
     ///////////////////////////////////////////////////////////////////////////
+    this.handleButtonDown = function (event, button) {
+      _hitPoint = getHitPoint(event);
+      _isDragging = true;
+      if (_transformControlTx.onPointerDown(event)) {
+        console.log("onPointerDown: ", event);
+        // const direction = detectArrowClick(event);
+        // if (direction) {
+        //   onArrowClick(direction);
+        //   return true;
+        // }
+        const axis = _transformControlTx.axis;
+        if (axis) {
+          onArrowClick(axis, { x: event.clientX, y: event.clientY });
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // ///////////////////////////////////////////////////////////////////////////
+    // // original version of handleButtonUp
+    // //
+    // ///////////////////////////////////////////////////////////////////////////
     this.handleButtonUp = function (event, button) {
       _isDragging = false;
 
@@ -440,6 +529,32 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
       return false;
     };
 
+    // // this.handleButtonUp = function (event, button) {
+    // //   // // const mouseUpTime = Date.now();
+    // //   // // const pressDuration = mouseUpTime - _mouseDownTime;
+    // //   // console.log("Button up event happened, pressDuration:", pressDuration);
+    // //   // if (_transformControlTx.onPointerUp(event)) {
+    // //   //   const axis = _transformControlTx.axis;
+
+    // //   //   if (_clickAxis && pressDuration < _clickThreshold) {
+    // //   //     // 短按 - 顯示輸入框
+    // //   //     console.log("Quick click detected on axis:", axis);
+    // //   //     onArrowClick(axis, { x: event.clientX, y: event.clientY });
+    // //   //   }
+    // //   //   // else if (axis && pressDuration >= _clickThreshold) {
+    // //   //   //   // 長按 - 拖曳結束
+    // //   //   //   console.log("Drag ended on axis:", axis);
+    // //   //   //   _isDragging = false;
+    // //   //   // }
+    // //   //   return true;
+    // //   // }
+    // //   clearTimeout(_timeOut);
+    // //   if (!_isDragging && !_clickAxis)
+    // //     onArrowClick(_clickAxis, { x: event.clientX, y: event.clientY });
+    // //   if (_transformControlTx.onPointerUp(event)) return true;
+    // //   // _isDragging = false;
+    // //   return false;
+    // // };
     ///////////////////////////////////////////////////////////////////////////
     //
     //
@@ -492,10 +607,10 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
 
   _self.onToolbarCreated = function () {
     // Create a new toolbar group if it doesn't exist
-    this._group = this.viewer.toolbar.getControl("transformExtensionsToolbar");
+    this._group = this.viewer.toolbar.getControl("dashboard-toolbar-group");
     if (!this._group) {
       this._group = new Autodesk.Viewing.UI.ControlGroup(
-        "transformExtensionsToolbar"
+        "dashboard-toolbar-group"
       );
       this.viewer.toolbar.addControl(this._group);
     }
