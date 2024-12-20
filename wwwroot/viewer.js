@@ -1,8 +1,8 @@
-import "./extensions/MoveExtension.js";
+// import "./extensions/MoveExtension.js";
 import "./extensions/DeleteExtension.js";
 import "./extensions/HistoryExtension.js";
-// import "./extensions/TransformControlExtension.js";
 import "./extensions/TransformExtension/contents/main.js";
+import "./extensions/TransformAxisExtension/contents/main.js";
 
 async function getAccessToken(callback) {
   try {
@@ -15,7 +15,6 @@ async function getAccessToken(callback) {
     console.error(err);
   }
 }
-
 export function initViewer(container) {
   return new Promise(function (resolve, reject) {
     Autodesk.Viewing.Initializer(
@@ -24,10 +23,10 @@ export function initViewer(container) {
         const config = {
           extensions: [
             "Autodesk.DocumentBrowser",
-            "MoveExtension",
             "DeleteExtension",
             "HistoryExtension",
-            "TransformationExtension2",
+            // "TransformationExtension2",
+            "TransformAxisTool",
           ],
         };
         const viewer = new Autodesk.Viewing.GuiViewer3D(container, config);

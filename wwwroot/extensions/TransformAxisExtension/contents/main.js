@@ -23,12 +23,12 @@
 ///////////////////////////////////////////////////////////////////
 AutodeskNamespace("Autodesk.ADN.Viewing.Extension");
 
-Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
+Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
   ///////////////////////////////////////////////////////////////////////////
   //
   //
   ///////////////////////////////////////////////////////////////////////////
-  function TransformTool() {
+  function TransformAxisTool() {
     var _hitPoint = null;
 
     var _isDragging = false;
@@ -48,7 +48,7 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
 
     ///////////////////////////////////////////////////////////////////////////
     // Creates a dummy mesh to attach control to
-    //
+    // 創造一個假 mesh 來附著 transformControlTx
     ///////////////////////////////////////////////////////////////////////////
     function createTransformMesh() {
       var material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
@@ -67,7 +67,7 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
 
     ///////////////////////////////////////////////////////////////////////////
     // on translation change
-    //
+    // 當 transformControlTx 的 translation 改變時，更新 selectedFragProxyMap 的 position
     ///////////////////////////////////////////////////////////////////////////
     function onTxChange() {
       for (var fragId in _selectedFragProxyMap) {
@@ -203,8 +203,7 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
       alert("onArrowClick: " + direction);
       const inputBox = document.createElement("input");
       inputBox.type = "number";
-      // inputBox.value = 0;
-      inputBox.placeholder = "請輸入移動距離 (cm)";
+      inputBox.placeholder = `請輸入往 ${direction} 軸的移動距離 (cm)`;
 
       // 設置輸入框的位置為滑鼠點擊的位置
       inputBox.style.position = "absolute";
@@ -270,6 +269,9 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
       }
       _transformMesh.position.add(moveVector);
       onTxChange(); // 更新位置
+
+      // 貼附移動過後的 transformControlTx to transformMesh
+      _transformControlTx.attach(_transformMesh);
       updateHistory(moveVector);
     }
 
@@ -421,11 +423,11 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     //
     ///////////////////////////////////////////////////////////////////////////
     this.getNames = function () {
-      return ["Dotty.Viewing.Tool.TransformTool"];
+      return ["Dotty.Viewing.Tool.TransformAxisTool"];
     };
 
     this.getName = function () {
-      return "Dotty.Viewing.Tool.TransformTool";
+      return "Dotty.Viewing.Tool.TransformAxisTool";
     };
 
     ///////////////////////////////////////////////////////////////////////////
@@ -434,10 +436,10 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     ///////////////////////////////////////////////////////////////////////////
     this.activate = function () {
       viewer.select([]);
-
+      console.log("TransformAxisTool activate");
       var bbox = viewer.model.getBoundingBox();
 
-      viewer.impl.createOverlayScene("Dotty.Viewing.Tool.TransformTool");
+      viewer.impl.createOverlayScene("Dotty.Viewing.Tool.TransformAxisTool");
 
       _transformControlTx = new THREE.TransformControls(
         viewer.impl.camera,
@@ -450,7 +452,7 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
       _transformControlTx.visible = false;
 
       viewer.impl.addOverlay(
-        "Dotty.Viewing.Tool.TransformTool",
+        "Dotty.Viewing.Tool.TransformAxisTool",
         _transformControlTx
       );
 
@@ -459,10 +461,10 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
       _transformControlTx.attach(_transformMesh);
 
       _transformControlTx.addEventListener("mouseDown", (event) => {
-        console.log("transformTool mouseDown: ", event);
+        console.log("TransformAxisTool mouseDown: ", event);
         if (event.button == 1 || event.buttons == 4) {
           const axis = _transformControlTx.axis;
-          console.log("transformTool mouseDown with axis: ", axis);
+          console.log("TransformAxisTool mouseDown with axis: ", axis);
         }
       });
 
@@ -478,7 +480,7 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     ///////////////////////////////////////////////////////////////////////////
     this.deactivate = function () {
       viewer.impl.removeOverlay(
-        "Dotty.Viewing.Tool.TransformTool",
+        "Dotty.Viewing.Tool.TransformAxisTool",
         _transformControlTx
       );
 
@@ -486,7 +488,7 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
 
       _transformControlTx = null;
 
-      viewer.impl.removeOverlayScene("Dotty.Viewing.Tool.TransformTool");
+      viewer.impl.removeOverlayScene("Dotty.Viewing.Tool.TransformAxisTool");
 
       viewer.removeEventListener(
         Autodesk.Viewing.CAMERA_CHANGE_EVENT,
@@ -540,7 +542,7 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     //
     ///////////////////////////////////////////////////////////////////////////
     // this.handleButtonDown = function (event, button) {
-    //   console.log("transformTool handleButtonDown:", this);
+    //   console.log("TransformAxisTool handleButtonDown:", this);
     //   _hitPoint = getHitPoint(event);
 
     //   _isDragging = true;
@@ -556,8 +558,10 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     //
     ///////////////////////////////////////////////////////////////////////////
     this.handleButtonDown = function (event, button) {
-      _hitPoint = getHitPoint(event);
-      _isDragging = true;
+      if (_transformControlTx.axis === null) {
+        _hitPoint = getHitPoint(event);
+      }
+      _isDragging = false;
       if (_transformControlTx.onPointerDown(event)) {
         console.log("onPointerDown: ", event);
         const axis = _transformControlTx.axis;
@@ -631,7 +635,7 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
           const distanceMoved = currentHitPoint.clone().sub(prevoiusHitPoint); // 計算移動距離
           totalDistanceMoved.add(distanceMoved); // 累加移動距離
 
-          console.log("transformTool onPointerMove: ", event);
+          console.log("TransformAxisTool onPointerMove: ", event);
           return true;
         }
 
@@ -670,8 +674,18 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
   //
   ///////////////////////////////////////////////////////
   _self.load = function () {
-    console.log("Autodesk.ADN.Viewing.Extension.TransformTool loaded");
+    console.log("Autodesk.ADN.Viewing.Extension.TransformAxisTool loaded");
 
+    document.addEventListener("keydown", (event) => {
+      console.log("TransformAxisTool keydown: ", event);
+      if (event.key === "Z" || event.key === "z") {
+        event.preventDefault();
+        const selectedDbId = viewer.getSelection();
+        if (selectedDbId.length > 0) {
+          viewer.fitToView([selectedDbId]);
+        }
+      }
+    });
     return true;
   };
 
@@ -686,8 +700,10 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     }
 
     // Add a new button to the toolbar group
-    this._button = new Autodesk.Viewing.UI.Button("transformExtensionButton");
-    this._button.icon.classList.add("fas", "fa-arrows-alt");
+    this._button = new Autodesk.Viewing.UI.Button(
+      "transformAxisExtensionButton"
+    );
+    this._button.icon.classList.add("fa-solid", "fa-pen-ruler");
 
     this._button.onClick = (ev) => {
       // Execute an action here
@@ -699,12 +715,12 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
         this._button.setState(Autodesk.Viewing.UI.Button.State.INACTIVE);
       }
     };
-    this._button.setToolTip("Transform Object");
+    this._button.setToolTip("Transform Object By Axis");
     this._group.addControl(this._button);
   };
 
   _self.initialize = function () {
-    _self.tool = new TransformTool();
+    _self.tool = new TransformAxisTool();
 
     viewer.toolController.registerTool(_self.tool);
 
@@ -735,7 +751,7 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
         this.viewer.toolbar.removeControl(this._group);
       }
     }
-    console.log("Autodesk.ADN.Viewing.Extension.TransformTool unloaded");
+    console.log("Autodesk.ADN.Viewing.Extension.TransformAxisTool unloaded");
 
     return true;
   };
@@ -757,14 +773,14 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
   }
 };
 
-Autodesk.ADN.Viewing.Extension.TransformTool.prototype = Object.create(
+Autodesk.ADN.Viewing.Extension.TransformAxisTool.prototype = Object.create(
   Autodesk.Viewing.Extension.prototype
 );
 
-Autodesk.ADN.Viewing.Extension.TransformTool.prototype.constructor =
-  Autodesk.ADN.Viewing.Extension.TransformTool;
+Autodesk.ADN.Viewing.Extension.TransformAxisTool.prototype.constructor =
+  Autodesk.ADN.Viewing.Extension.TransformAxisTool;
 
 Autodesk.Viewing.theExtensionManager.registerExtension(
-  "TransformationExtension2",
-  Autodesk.ADN.Viewing.Extension.TransformTool
+  "TransformAxisTool",
+  Autodesk.ADN.Viewing.Extension.TransformAxisTool
 );
