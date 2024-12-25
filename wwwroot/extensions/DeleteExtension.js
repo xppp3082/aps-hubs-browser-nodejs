@@ -1,5 +1,6 @@
 import { BaseExtension } from "./BaseExtension.js";
 import { DeletePanel } from "./DeletePanel.js";
+import { viewerUtils } from "../utils/viewerUtils.js";
 
 class DeleteExtension extends BaseExtension {
   constructor(viewer, options) {
@@ -8,6 +9,7 @@ class DeleteExtension extends BaseExtension {
     this.button = null;
     this.selectedDbId = null;
     this.viewer = viewer;
+    this.selectedElementId = null;
   }
 
   async load() {
@@ -98,7 +100,7 @@ class DeleteExtension extends BaseExtension {
     }
   }
 
-  onSelectionChanged(event) {
+  async onSelectionChanged(event) {
     if (!this.panel) {
       // console.log("Panel not found, initializing...");
       this.panel = new DeletePanel(this, "delete-panel", "Delete Elements");
@@ -109,6 +111,10 @@ class DeleteExtension extends BaseExtension {
     if (dbIds.length > 0) {
       this.selectedDbId = dbIds[0];
       this.panel.setSelectedElement(this.selectedDbId);
+      this.selectedElementId = await viewerUtils.getElementId(
+        this.viewer,
+        this.selectedDbId
+      );
       // console.log(`Selection changed: ${this.selectedDbId}`);
     } else {
       this.selectedDbId = null;
@@ -134,11 +140,6 @@ class DeleteExtension extends BaseExtension {
         fragIds.push(fragId);
       });
 
-    // // 隱藏所有相關的片段 (沒辦法直接刪除嗎?)
-    // fragIds.forEach((fragId) => {
-    //   this.viewer.hide(dbId);
-    // });
-
     this.viewer.hide(dbId);
 
     // 更新場景
@@ -155,7 +156,7 @@ class DeleteExtension extends BaseExtension {
       body: JSON.stringify({
         urn: modelUrn,
         dbid: dbId,
-        elementId: this.elementId,
+        elementId: this.selectedElementId,
       }),
     })
       .then((response) => {

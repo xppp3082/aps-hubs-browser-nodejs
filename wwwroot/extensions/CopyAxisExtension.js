@@ -1,47 +1,9 @@
-import { viewerUtils } from "../../../utils/viewerUtils.js";
-/////////////////////////////////////////////////////////////////////
-// Copyright (c) Autodesk, Inc. All rights reserved
-// Written by APS Partner Development
-//
-// Permission to use, copy, modify, and distribute this software in
-// object code form for any purpose and without fee is hereby granted,
-// provided that the above copyright notice appears in all copies and
-// that both that copyright notice and the limited warranty and
-// restricted rights notice below appear in all supporting
-// documentation.
-//
-// AUTODESK PROVIDES THIS PROGRAM "AS IS" AND WITH ALL FAULTS.
-// AUTODESK SPECIFICALLY DISCLAIMS ANY IMPLIED WARRANTY OF
-// MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE.  AUTODESK, INC.
-// DOES NOT WARRANT THAT THE OPERATION OF THE PROGRAM WILL BE
-// UNINTERRUPTED OR ERROR FREE.
-/////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////
-// Transform Tool viewer extension
-// by Philippe Leefsma, August 2015
-//
-///////////////////////////////////////////////////////////////////
+import { viewerUtils } from "../utils/viewerUtils.js";
 
 AutodeskNamespace("Autodesk.ADN.Viewing.Extension");
 
-Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
-  // Redesgin By Travis
-  // 1. 當選取物件時 => getHitpoint => getSelectedObject => 在 hitpoint 上創建 transformMesh
-  // Switch
-  // Case(要移動此物件)
-  // 2. 當按下 TransformControls 時 => 取的要移動的軸，並在軸上顯示 inputBox (這邊要避免 onItemSelected 被 fired )
-  // 3. 當輸入框輸入數字並按下 Enter 時 => 移動物件 => 同時刪除 inputBox
-
-  // Case(不移動此物件)
-  // 4. 當按下 ESC 時 => 不移動物件 => 同時刪除 inputBox
-  // 5. 當沒按下 ESC 但直接選擇另一個物件時，移動 transformControl 到 hitpoint，並刪除既有的 inputBox
-
-  ///////////////////////////////////////////////////////////////////////////
-  //
-  //
-  ///////////////////////////////////////////////////////////////////////////
-  function TransformAxisTool() {
+Autodesk.ADN.Viewing.Extension.CopyAxisTool = function (viewer, options) {
+  function CopyAxisTool() {
     var _hitPoint = null;
     var _isDragging = false;
     var _transformMesh = null;
@@ -52,14 +14,10 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
     var _selectedDbId = null;
     var _isActivated = true;
     var _selectedElementId = null;
-    ///////////////////////////////////////////////////////////////////////////
-    // Creates a dummy mesh to attach control to
-    // 創造一個假 mesh 來附著 transformControlTx
-    ///////////////////////////////////////////////////////////////////////////
+
     function createTransformMesh() {
       var material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
 
-      // 透過 Autodesk.Viewing.MaterialsManager 來創建 material
       viewer.impl.matman().addMaterial(guid(), material, true);
 
       var sphere = new THREE.Mesh(
@@ -72,42 +30,31 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       return sphere;
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // on translation change
-    // 當 transformControlTx 的 translation 改變時，更新 selectedFragProxyMap 的 position
-    ///////////////////////////////////////////////////////////////////////////
     function onTxChange() {
       for (var fragId in _selectedFragProxyMap) {
         var fragProxy = _selectedFragProxyMap[fragId];
+        console.log("onTxChange fragProxy: ", fragProxy);
+        console.log("onTxChange _transformMesh: ", _transformMesh);
 
-        var position = new THREE.Vector3(
+        var targetPosition = new THREE.Vector3(
           _transformMesh.position.x - fragProxy.offset.x,
           _transformMesh.position.y - fragProxy.offset.y,
           _transformMesh.position.z - fragProxy.offset.z
         );
-
-        fragProxy.position = position;
+        console.log("targetPosition: ", targetPosition);
+        // fragProxy.position.copy(targetPosition);
         fragProxy.updateAnimTransform();
       }
 
       viewer.impl.sceneUpdated(true);
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // on camera changed
-    //
-    ///////////////////////////////////////////////////////////////////////////
     function onCameraChanged() {
       _transformControlTx.update();
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // item selected callback
-    //
-    ///////////////////////////////////////////////////////////////////////////
     async function onItemSelected(event) {
       if (!_isActivated) return;
-      console.log(_clickAxis);
       if (!event.dbIdArray || event.dbIdArray.length === 0 || _clickAxis) {
         viewer.select([_selectedDbId]);
         console.log("Clicked on empty space, ignoring...");
@@ -123,12 +70,11 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
         _selectedDbId = dbId;
         _selectedElementId = await viewerUtils.getElementId(viewer, dbId);
       }
-      //component unselected
+
+      // component unselected
       if (!event.fragIdsArray.length) {
         _hitPoint = null;
-
         _transformControlTx.visible = false;
-
         _transformControlTx.removeEventListener("change", onTxChange);
         viewer.select([]);
         viewer.removeEventListener(
@@ -140,11 +86,8 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
 
       if (_hitPoint) {
         _transformControlTx.visible = true;
-
         _transformControlTx.setPosition(_hitPoint);
-
         _transformControlTx.addEventListener("change", onTxChange);
-
         viewer.addEventListener(
           Autodesk.Viewing.CAMERA_CHANGE_EVENT,
           onCameraChanged
@@ -152,7 +95,6 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
 
         event.fragIdsArray.forEach(function (fragId) {
           var fragProxy = viewer.impl.getFragmentProxy(viewer.model, fragId);
-
           fragProxy.getAnimTransform();
 
           var offset = {
@@ -162,9 +104,8 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
           };
 
           fragProxy.offset = offset;
-
           _selectedFragProxyMap[fragId] = fragProxy;
-
+          console.log("Selected fragProxy: ", fragProxy);
           _modifiedFragIdMap[fragId] = {};
         });
 
@@ -174,10 +115,6 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       }
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // normalize screen coordinates
-    //
-    ///////////////////////////////////////////////////////////////////////////
     function normalize(screenPoint) {
       var viewport = viewer.navigation.getScreenViewport();
 
@@ -189,10 +126,6 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       return n;
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // get 3d hit point on mesh
-    //
-    ///////////////////////////////////////////////////////////////////////////
     function getHitPoint(event) {
       var screenPoint = {
         x: event.clientX,
@@ -206,14 +139,9 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       return hitPoint;
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // handle arrow click to show input box
-    //
-    ///////////////////////////////////////////////////////////////////////////
     function onArrowClick(direction, screenPoint) {
-      // alert("onArrowClick: " + direction);
       const inputBox = document.createElement("input");
-
+      inputBox.id = "copyAxisInputBox";
       inputBox.type = "number";
       inputBox.placeholder = `請輸入往 ${direction} 軸的移動距離 (cm)`;
 
@@ -221,7 +149,7 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       inputBox.style.position = "absolute";
       inputBox.style.left = `${screenPoint.x}px`;
       inputBox.style.top = `${screenPoint.y}px`;
-      inputBox.style.zIndex = 1000; // 設置較高的 z-index
+      inputBox.style.zIndex = 1000;
 
       document.body.appendChild(inputBox);
       inputBox.focus();
@@ -230,7 +158,7 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
         if (event.key === "Enter") {
           const distance = parseFloat(inputBox.value);
           if (!isNaN(distance)) {
-            moveElement(direction, distance);
+            copyElement(direction, distance);
           } else {
             console.error("Invalid input, please enter a number");
           }
@@ -239,6 +167,7 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
           _clickAxis = null;
         }
       });
+
       // 全局監聽鍵盤事件
       const handleGlobalKeyDown = (event) => {
         if (event.key === "Escape") {
@@ -254,129 +183,114 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       document.addEventListener("keydown", handleGlobalKeyDown); // 添加全局事件監聽
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // move element based on direction and distance
-    //
-    ///////////////////////////////////////////////////////////////////////////
-    function moveElement(direction, distance) {
-      const moveVector = new THREE.Vector3();
+    function copyElement(direction, distance) {
+      const copyVector = new THREE.Vector3();
       const convertedDistance = viewerUtils.convertUnitBasedOnModel(
         viewer,
         distance
       );
-      console.log("moveElement: ", direction, distance);
       switch (direction) {
         case "X":
-          moveVector.set(convertedDistance, 0, 0);
+          copyVector.set(convertedDistance, 0, 0);
           break;
         case "Y":
-          moveVector.set(0, convertedDistance, 0);
+          copyVector.set(0, convertedDistance, 0);
           break;
         case "Z":
-          moveVector.set(0, 0, convertedDistance);
+          copyVector.set(0, 0, convertedDistance);
           break;
         default:
           alert("Invalid direction, please click on the right axis.");
           console.error("Invalid direction");
           return;
       }
-      _transformMesh.position.add(moveVector);
-      onTxChange(); // 更新位置
-
-      // 貼附移動過後的 transformControlTx to transformMesh
-      _transformControlTx.attach(_transformMesh);
-      updateHistory(moveVector);
+      // console.log("original _transformMesh: ", _transformMesh);
+      const newPosition = _transformMesh.position.clone().add(copyVector);
+      const moveVector = new THREE.Vector3(
+        newPosition.x - _transformMesh.position.x,
+        newPosition.y - _transformMesh.position.y,
+        newPosition.z - _transformMesh.position.z
+      );
+      // console.log("newPosition: ", newPosition);
+      // _transformMesh.position.add(copyVector);
+      // onTxChange();
+      // createCloneObject(moveVector);
+      createCloneObject(copyVector);
+      //   onTxChange(); //更新位置
     }
 
-    async function updateHistory(moveVector) {
-      const modelUrn = viewer.model.getData().urn;
-      const response = await fetch(
-        `/api/modelActions/${modelUrn}/history?dbid=${_selectedDbId}`
-      );
-      const { data } = await response.json();
-      if (data && data.length > 0) {
-        const existingAction = data[0];
-        console.log("existingAction: ", existingAction);
-        const updatedAction = {
-          ...existingAction,
-          x: existingAction.x + moveVector.x,
-          y: existingAction.y + moveVector.y,
-          z: existingAction.z + moveVector.z,
-          elementId: existingAction.elementId || _selectedElementId,
-          timestamp: new Date().toISOString(),
-        };
-        await fetch(`/api/modelActions/update`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updatedAction),
-        });
-        console.log(
-          `Updated move action for dbId ${_selectedDbId}:`,
-          updatedAction
-        );
-      } else {
-        //如果不存在，則插入新的紀錄
-        const modelUrn = viewer.model.getData().urn;
-        fetch(`/api/modelActions/move`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            urn: modelUrn,
-            dbid: _selectedDbId,
-            x: moveVector.x,
-            y: moveVector.y,
-            z: moveVector.z,
-            elementId: _selectedElementId,
-          }),
-        });
+    function createCloneObject(newPosition) {
+      // 用於儲存新創建的 fragments
+      try {
+        const newFragProxyMap = {};
+        for (var fragId in _selectedFragProxyMap) {
+          const originalFragProxy = _selectedFragProxyMap[fragId];
+
+          //1. 獲取原始 fragment 的資訊
+          const mesh = viewer.impl.getFragmentProxy(viewer.model, fragId);
+          mesh.getAnimTransform();
+
+          //使用 getRenderProxy 替代 getGeometry
+          const renderProxy = viewer.impl.getRenderProxy(viewer.model, fragId);
+          const geometry = renderProxy.geometry;
+          const material = renderProxy.material;
+
+          // 創建新的 fragment
+          const newMesh = new THREE.Mesh(geometry, material);
+
+          //設置新的 fragment 的位置
+          // const position = new THREE.Vector3(
+          //   newPosition.x - originalFragProxy.position.x,
+          //   newPosition.y - originalFragProxy.position.y,
+          //   newPosition.z - originalFragProxy.position.z
+          // );
+          const position = new THREE.Vector3(
+            newPosition.x + originalFragProxy.offset.x, // 直接使用新位置
+            newPosition.y + originalFragProxy.offset.y,
+            newPosition.z + originalFragProxy.offset.z
+          );
+          // newMesh.position.copy(position);
+          console.log("new mesh position: ", newMesh.position);
+          const worldPosition = new THREE.Vector3();
+          newMesh.localToWorld(worldPosition);
+          newMesh.position.copy(worldPosition);
+          console.log("new mesh position after move: ", newMesh.position);
+
+          // 複製其它必要轉換
+          if (originalFragProxy.scale) {
+            newMesh.scale.copy(originalFragProxy.scale);
+          }
+          if (originalFragProxy.quaternion) {
+            newMesh.quaternion.copy(originalFragProxy.quaternion);
+          }
+
+          // 將新的 fragment 添加到模型中
+          const modelId = viewer.model.id;
+          const overlayName = `CopyAxisTool_${modelId}_${fragId}`;
+          viewer.impl.createOverlayScene(overlayName);
+          viewer.impl.addOverlay(overlayName, newMesh);
+
+          //6. 儲存新的 mesh 資訊
+          newFragProxyMap[fragId] = {
+            mesh: newMesh,
+            overlayName: overlayName,
+            position: newPosition,
+          };
+
+          console.log(`Created clone for fragId: ${fragId}`);
+        }
+        // 7. 更新場景
+        viewer.impl.sceneUpdated(true);
+        console.log("Clone object creation completed successfully");
+
+        // 8. 返回新創建的 fragments map
+        return newFragProxyMap;
+      } catch (error) {
+        console.log("Error in createCloneObject:", error);
+        throw error;
       }
     }
 
-    // function convertUnitBasedOnModel(distance) {
-    //   const modelUnit = viewer.model.getUnitString();
-    //   switch (modelUnit) {
-    //     case "mm":
-    //       return distance * 10;
-    //     case "cm":
-    //       return distance * 1;
-    //     case "m":
-    //       return distance / 100;
-    //     case "km":
-    //       return distance / 100000;
-    //     case "ft":
-    //       return distance / 30.48;
-    //     case "in":
-    //       return distance / 2.54;
-    //     default:
-    //       return distance;
-    //   }
-    // }
-
-    // // 因為 Viewer.getProperties 是異步的，所以需要使用 Promise 來處理非同步的問題
-    // function getElementId(viewer, dbId) {
-    //   return new Promise((resolve, reject) => {
-    //     viewer.getProperties(dbId, (props) => {
-    //       console.log("selected object properties: ", props);
-    //       const elementIdProperty = props.properties.find(
-    //         (prop) => prop.attributeName === "ElementId"
-    //       );
-    //       if (elementIdProperty) {
-    //         resolve(elementIdProperty.displayValue);
-    //       } else {
-    //         reject(new Error("ElementId not found"));
-    //       }
-    //     });
-    //   });
-    // }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // returns all transformed meshes
-    //
-    ///////////////////////////////////////////////////////////////////////////
     this.getTransformMap = function () {
       var transformMap = {};
 
@@ -395,28 +309,20 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       return transformMap;
     };
 
-    ///////////////////////////////////////////////////////////////////////////
-    //
-    //
-    ///////////////////////////////////////////////////////////////////////////
     this.getNames = function () {
-      return ["Dotty.Viewing.Tool.TransformAxisTool"];
+      return ["Dotty.Viewing.Tool.CopyAxisTool"];
     };
 
     this.getName = function () {
-      return "Dotty.Viewing.Tool.TransformAxisTool";
+      return "Dotty.Viewing.Tool.CopyAxisTool";
     };
 
-    ///////////////////////////////////////////////////////////////////////////
-    // activates tool
-    //
-    ///////////////////////////////////////////////////////////////////////////
     this.activate = function () {
       viewer.select([]);
-      console.log("TransformAxisTool activate");
+      console.log("CopyAxisTool activate");
       var bbox = viewer.model.getBoundingBox();
 
-      viewer.impl.createOverlayScene("Dotty.Viewing.Tool.TransformAxisTool");
+      viewer.impl.createOverlayScene("Dotty.Viewing.Tool.CopyAxisTool");
 
       _transformControlTx = new THREE.TransformControls(
         viewer.impl.camera,
@@ -429,7 +335,7 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       _transformControlTx.visible = false;
 
       viewer.impl.addOverlay(
-        "Dotty.Viewing.Tool.TransformAxisTool",
+        "Dotty.Viewing.Tool.CopyAxisTool",
         _transformControlTx
       );
 
@@ -437,37 +343,27 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
 
       _transformControlTx.attach(_transformMesh);
 
-      // 監聽模型中選擇變更的事件
-      // 以下都會觸發選擇變更事件
-      // viewer.select(dbId);  // 選擇特定元素
-      // viewer.select([dbId1, dbId2]);  // 選擇多個元素
-      // viewer.clearSelection();  // 清除所有選擇
-      // viewer.toggleSelect(dbId);  // 切換元素的選擇狀態
       viewer.addEventListener(
         Autodesk.Viewing.SELECTION_CHANGED_EVENT,
         onItemSelected
       );
     };
 
-    ///////////////////////////////////////////////////////////////////////////
-    // deactivate tool
-    //
-    ///////////////////////////////////////////////////////////////////////////
     this.deactivate = function () {
       viewer.impl.removeOverlay(
-        "Dotty.Viewing.Tool.TransformAxisTool",
+        "Dotty.Viewing.Tool.CopyAxisTool",
         _transformControlTx
       );
 
       _transformControlTx.removeEventListener("change", onTxChange);
 
-      viewer.impl.removeOverlayScene("Dotty.Viewing.Tool.TransformAxisTool");
+      viewer.impl.removeOverlayScene("Dotty.Viewing.Tool.CopyAxisTool");
 
       viewer.removeEventListener(
         Autodesk.Viewing.CAMERA_CHANGE_EVENT,
         onCameraChanged
       );
-      console.log("TransformAxisTool deactivate");
+      console.log("CopyAxisTool deactivate");
 
       viewer.removeEventListener(
         Autodesk.Viewing.SELECTION_CHANGED_EVENT,
@@ -477,10 +373,6 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       _isActivated = false;
     };
 
-    ///////////////////////////////////////////////////////////////////////////
-    //
-    //
-    ///////////////////////////////////////////////////////////////////////////
     this.update = function (t) {
       return false;
     };
@@ -518,10 +410,6 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       return false;
     };
 
-    ///////////////////////////////////////////////////////////////////////////
-    // handle button down to detect arrow clicks
-    //
-    ///////////////////////////////////////////////////////////////////////////
     this.handleButtonDown = function (event, button) {
       console.log("handleButtonDown: ", event, _transformControlTx.axis);
       if (_transformControlTx.axis === null) {
@@ -546,10 +434,6 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       return false;
     };
 
-    // ///////////////////////////////////////////////////////////////////////////
-    // // original version of handleButtonUp
-    // //
-    // ///////////////////////////////////////////////////////////////////////////
     this.handleButtonUp = function (event, button) {
       _isDragging = false;
       if (_transformControlTx.onPointerUp(event)) {
@@ -560,10 +444,6 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       return false;
     };
 
-    ///////////////////////////////////////////////////////////////////////////
-    //
-    //
-    ///////////////////////////////////////////////////////////////////////////
     let totalDistanceMoved = new THREE.Vector3(); //用於紀錄移動距離
 
     this.handleMouseMove = function (event) {
@@ -575,7 +455,7 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
           const distanceMoved = currentHitPoint.clone().sub(prevoiusHitPoint); // 計算移動距離
           totalDistanceMoved.add(distanceMoved); // 累加移動距離
 
-          console.log("TransformAxisTool onPointerMove: ", event);
+          console.log("CopyAxisTool onPointerMove: ", event);
           return true;
         }
 
@@ -588,10 +468,6 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       return false;
     };
 
-    ///////////////////////////////////////////////////////////////////////////
-    //
-    //
-    ///////////////////////////////////////////////////////////////////////////
     this.handleGesture = function (event) {
       return false;
     };
@@ -614,7 +490,7 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
   //
   ///////////////////////////////////////////////////////
   _self.load = function () {
-    console.log("Autodesk.ADN.Viewing.Extension.TransformAxisTool loaded");
+    console.log("Autodesk.ADN.Viewing.Extension.CopyAxisTool loaded");
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Z" || event.key === "z") {
@@ -639,10 +515,8 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
     }
 
     // Add a new button to the toolbar group
-    this._button = new Autodesk.Viewing.UI.Button(
-      "transformAxisExtensionButton"
-    );
-    this._button.icon.classList.add("fas", "fa-arrows-alt");
+    this._button = new Autodesk.Viewing.UI.Button("copyAxisExtensionButton");
+    this._button.icon.classList.add("fa-solid", "fa-copy");
 
     this._button.onClick = (ev) => {
       // Execute an action here
@@ -659,7 +533,7 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
   };
 
   _self.initialize = function () {
-    _self.tool = new TransformAxisTool();
+    _self.tool = new CopyAxisTool();
 
     viewer.toolController.registerTool(_self.tool);
 
@@ -690,7 +564,7 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
         this.viewer.toolbar.removeControl(this._group);
       }
     }
-    console.log("Autodesk.ADN.Viewing.Extension.TransformAxisTool unloaded");
+    console.log("Autodesk.ADN.Viewing.Extension.CopyAxisTool unloaded");
 
     return true;
   };
@@ -712,14 +586,14 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
   }
 };
 
-Autodesk.ADN.Viewing.Extension.TransformAxisTool.prototype = Object.create(
+Autodesk.ADN.Viewing.Extension.CopyAxisTool.prototype = Object.create(
   Autodesk.Viewing.Extension.prototype
 );
 
-Autodesk.ADN.Viewing.Extension.TransformAxisTool.prototype.constructor =
-  Autodesk.ADN.Viewing.Extension.TransformAxisTool;
+Autodesk.ADN.Viewing.Extension.CopyAxisTool.prototype.constructor =
+  Autodesk.ADN.Viewing.Extension.CopyAxisTool;
 
 Autodesk.Viewing.theExtensionManager.registerExtension(
-  "TransformAxisTool",
-  Autodesk.ADN.Viewing.Extension.TransformAxisTool
+  "CopyAxisTool",
+  Autodesk.ADN.Viewing.Extension.CopyAxisTool
 );

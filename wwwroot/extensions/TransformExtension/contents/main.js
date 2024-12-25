@@ -200,7 +200,7 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
     //
     ///////////////////////////////////////////////////////////////////////////
     function onArrowClick(direction, screenPoint) {
-      alert("onArrowClick: " + direction);
+      // alert("onArrowClick: " + direction);
       const inputBox = document.createElement("input");
       inputBox.type = "number";
       // inputBox.value = 0;
@@ -466,6 +466,12 @@ Autodesk.ADN.Viewing.Extension.TransformTool = function (viewer, options) {
         }
       });
 
+      // 監聽模型中選擇變更的事件
+      // 以下都會觸發選擇變更事件
+      // viewer.select(dbId);  // 選擇特定元素
+      // viewer.select([dbId1, dbId2]);  // 選擇多個元素
+      // viewer.clearSelection();  // 清除所有選擇
+      // viewer.toggleSelect(dbId);  // 切換元素的選擇狀態
       viewer.addEventListener(
         Autodesk.Viewing.SELECTION_CHANGED_EVENT,
         onItemSelected
