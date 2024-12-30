@@ -121,6 +121,7 @@ Autodesk.ADN.Viewing.Extension.TransformAxisTool = function (viewer, options) {
       if (dbIds && dbIds.length > 0) {
         const dbId = dbIds[0];
         _selectedDbId = dbId;
+        console.log("current selected dbId: ", _selectedDbId);
         _selectedElementId = await viewerUtils.getElementId(viewer, dbId);
       }
       //component unselected

@@ -24,7 +24,8 @@ export function initViewer(container) {
         const config = {
           extensions: [
             "Autodesk.DocumentBrowser",
-            "DeleteExtension",
+            // "Autodesk.Viewing.SceneBuilder",
+            // "DeleteExtension",
             "HistoryExtension",
             "TransformAxisTool",
             "CopyAxisTool",

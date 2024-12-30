@@ -1,4 +1,7 @@
 import { viewerUtils } from "../utils/viewerUtils.js";
+// import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { BufferGeometryUtils } from "https://cdn.jsdelivr.net/npm/three@0.125.2/examples/jsm/utils/BufferGeometryUtils.js";
+// import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 AutodeskNamespace("Autodesk.ADN.Viewing.Extension");
 
@@ -14,6 +17,7 @@ Autodesk.ADN.Viewing.Extension.CopyAxisTool = function (viewer, options) {
     var _selectedDbId = null;
     var _isActivated = true;
     var _selectedElementId = null;
+    var _sceneBuilder = null;
 
     function createTransformMesh() {
       var material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
@@ -33,16 +37,12 @@ Autodesk.ADN.Viewing.Extension.CopyAxisTool = function (viewer, options) {
     function onTxChange() {
       for (var fragId in _selectedFragProxyMap) {
         var fragProxy = _selectedFragProxyMap[fragId];
-        console.log("onTxChange fragProxy: ", fragProxy);
-        console.log("onTxChange _transformMesh: ", _transformMesh);
 
         var targetPosition = new THREE.Vector3(
           _transformMesh.position.x - fragProxy.offset.x,
           _transformMesh.position.y - fragProxy.offset.y,
           _transformMesh.position.z - fragProxy.offset.z
         );
-        console.log("targetPosition: ", targetPosition);
-        // fragProxy.position.copy(targetPosition);
         fragProxy.updateAnimTransform();
       }
 
@@ -219,75 +219,150 @@ Autodesk.ADN.Viewing.Extension.CopyAxisTool = function (viewer, options) {
       //   onTxChange(); //更新位置
     }
 
-    function createCloneObject(newPosition) {
-      // 用於儲存新創建的 fragments
-      try {
-        const newFragProxyMap = {};
-        for (var fragId in _selectedFragProxyMap) {
-          const originalFragProxy = _selectedFragProxyMap[fragId];
-
-          //1. 獲取原始 fragment 的資訊
-          const mesh = viewer.impl.getFragmentProxy(viewer.model, fragId);
-          mesh.getAnimTransform();
-
-          //使用 getRenderProxy 替代 getGeometry
-          const renderProxy = viewer.impl.getRenderProxy(viewer.model, fragId);
-          const geometry = renderProxy.geometry;
-          const material = renderProxy.material;
-
-          // 創建新的 fragment
-          const newMesh = new THREE.Mesh(geometry, material);
-
-          //設置新的 fragment 的位置
-          // const position = new THREE.Vector3(
-          //   newPosition.x - originalFragProxy.position.x,
-          //   newPosition.y - originalFragProxy.position.y,
-          //   newPosition.z - originalFragProxy.position.z
-          // );
-          const position = new THREE.Vector3(
-            newPosition.x + originalFragProxy.offset.x, // 直接使用新位置
-            newPosition.y + originalFragProxy.offset.y,
-            newPosition.z + originalFragProxy.offset.z
-          );
-          // newMesh.position.copy(position);
-          console.log("new mesh position: ", newMesh.position);
-          const worldPosition = new THREE.Vector3();
-          newMesh.localToWorld(worldPosition);
-          newMesh.position.copy(worldPosition);
-          console.log("new mesh position after move: ", newMesh.position);
-
-          // 複製其它必要轉換
-          if (originalFragProxy.scale) {
-            newMesh.scale.copy(originalFragProxy.scale);
-          }
-          if (originalFragProxy.quaternion) {
-            newMesh.quaternion.copy(originalFragProxy.quaternion);
-          }
-
-          // 將新的 fragment 添加到模型中
-          const modelId = viewer.model.id;
-          const overlayName = `CopyAxisTool_${modelId}_${fragId}`;
-          viewer.impl.createOverlayScene(overlayName);
-          viewer.impl.addOverlay(overlayName, newMesh);
-
-          //6. 儲存新的 mesh 資訊
-          newFragProxyMap[fragId] = {
-            mesh: newMesh,
-            overlayName: overlayName,
-            position: newPosition,
-          };
-
-          console.log(`Created clone for fragId: ${fragId}`);
+    function initializeSceneBuilder() {
+      if (!_sceneBuilder) {
+        _sceneBuilder = viewer.getExtension("Autodesk.Viewing.SceneBuilder");
+        if (!_sceneBuilder) {
+          console.error("SceneBuilder extension is not loaded.");
         }
-        // 7. 更新場景
-        viewer.impl.sceneUpdated(true);
-        console.log("Clone object creation completed successfully");
+      }
+    }
 
-        // 8. 返回新創建的 fragments map
-        return newFragProxyMap;
+    async function createCloneObject(newPosition) {
+      // 用於儲存新創建的 fragments
+
+      initializeSceneBuilder();
+      console.log("createCloneObject: ", _sceneBuilder);
+      const modelBuilder = await _sceneBuilder.addNewModel({
+        conserveMemory: false,
+        modelNameOverride: "My Model Name",
+      });
+      try {
+        // let purple = new THREE.MeshPhongMaterial({
+        //   color: new THREE.Color(1, 0, 1),
+        // });
+        // modelBuilder.addMaterial("purple", purple);
+
+        // let torus = new THREE.BufferGeometry().fromGeometry(
+        //   new THREE.TorusGeometry(10, 2, 32, 32)
+        // );
+        // let mesh = new THREE.Mesh(torus, purple);
+
+        // mesh.matrix = new THREE.Matrix4().compose(
+        //   new THREE.Vector3(0, 12, 12),
+        //   new THREE.Quaternion(0, 0, 0, 1),
+        //   new THREE.Vector3(1, 1, 1)
+        // );
+        // mesh.dbId = 100; // Set the database id for the mesh
+        // modelBuilder.addMesh(mesh);
+
+        let selectedDbIds = viewer.getSelection();
+        if (selectedDbIds.length === 0) {
+          if (selectedDbIds.length === 0) {
+            selectedDbIds = viewer.getAggregateSelection();
+            if (selectedDbIds.length === 0) {
+              alert("請選擇一個元件");
+              return;
+            }
+          }
+        }
+        console.log("selectedDbIds: ", selectedDbIds);
+        console.log("_selectedFragProxyMap: ", _selectedFragProxyMap);
+
+        // 使用第一個選取的 DbId 取得對應的 FragId
+        for (const id of selectedDbIds) {
+          let selectIds = viewerUtils.findFragIdsByDBId(viewer, id);
+          console.log("selectIds: ", selectIds);
+          // 複製選取的片段幾何體
+          let geom = new THREE.BufferGeometry();
+          //let geom = new THREE.Geometry();
+          var renderProxy = null;
+          for (const selectId of selectIds) {
+            renderProxy = viewer.impl.getRenderProxy(viewer.model, selectId);
+            let VE = Autodesk.Viewing.Private.VertexEnumerator;
+            console.log("renderProxy: ", renderProxy);
+            // 檢查 renderProxy 和 geometry 是否有效
+            if (!renderProxy || !renderProxy.geometry) {
+              console.error("Invalid renderProxy or geometry, skipping.");
+              continue;
+            }
+            if (!geom) {
+              geom = geometry.clone();
+            } else {
+              const validGeometries = [geom, renderProxy.geometry].filter(
+                (geo) => geo && geo.attributes && geo.attributes.position
+              );
+              console.log("validGeometries: ", validGeometries);
+              if (validGeometries.length > 0) {
+                geom =
+                  BufferGeometryUtils.mergeBufferGeometries(validGeometries);
+              }
+            }
+
+            geom = BufferGeometryUtils.mergeBufferGeometries(
+              [geom, renderProxy.geometry],
+              true
+            );
+
+            ////頂點
+            //VE.enumMeshVertices(renderProxy.geometry, (v, i) => {
+            //    geom.vertices.push(new THREE.Vector3(v.x, v.y, v.z));
+            //});
+            //
+            ////面
+            //VE.enumMeshIndices(renderProxy.geometry, (a, b, c) => {
+            //    geom.faces.push(new THREE.Face3(a, b, c))
+            //});
+          }
+          //   ///創建新網格並應用材質
+          //   let mesh = new THREE.Mesh(
+          //     new THREE.BufferGeometry().fromGeometry(geom),
+          //     new THREE.MeshPhongMaterial({
+          //       color: new THREE.Color(1, 0, 0),
+          //     })
+          //   );
+
+          //   modelBuilder.addMesh(mesh);
+          // }
+
+          // let geom = new THREE.BufferGeometry();
+          // let geometryArray = [];
+          // let materialArray = [];
+          // for (var fragId in _selectedFragProxyMap) {
+          //   const originalFragProxy = _selectedFragProxyMap[fragId];
+          //   console.log(
+          //     `originalFragProxy: ${originalFragProxy} & current dbId: ${fragId}`
+          //   );
+          //   // const fragIds = viewerUtils.findFragIdsByDBId(viewer, fragId);
+          //   // console.log("fragIds: ", fragIds);
+          //   // for (const fragId of fragIds) {
+          //   const renderProxy = viewer.impl.getRenderProxy(viewer.model, fragId);
+          //   // 複製現有 Fragment 的幾何和材質
+          //   const geometry = renderProxy.geometry; // 幾何
+          //   const material = renderProxy.material; // 材質
+          //   console.log("fragId: ", fragId);
+          //   console.log("renderProxy: ", renderProxy);
+          //   console.log("geometry: ", geometry);
+          //   console.log("material: ", material);
+          //   const offset = originalFragProxy.offset; // 偏移
+
+          //   geom = BufferGeometryUtils.mergeBufferGeometries(
+          //     [geom, geometry],
+          //     false
+          //   );
+
+          //   console.log("geom: ", geom);
+        }
       } catch (error) {
-        console.log("Error in createCloneObject:", error);
+        console.error("Error in createCloneObject:", error);
         throw error;
+      }
+    }
+
+    function cleanupClonedObjects() {
+      if (_sceneBuilder) {
+        _sceneBuilder.clearScene();
+        viewer.impl.invalidate(true);
       }
     }
 
@@ -489,8 +564,20 @@ Autodesk.ADN.Viewing.Extension.CopyAxisTool = function (viewer, options) {
   // extension load callback
   //
   ///////////////////////////////////////////////////////
-  _self.load = function () {
+  _self.load = async function () {
     console.log("Autodesk.ADN.Viewing.Extension.CopyAxisTool loaded");
+
+    // 確保載入 SceneBuilder 擴展
+    try {
+      const sceneBuilderExt = await viewer.loadExtension(
+        "Autodesk.Viewing.SceneBuilder"
+      );
+      console.log("SceneBuilder extension loaded:", sceneBuilderExt);
+      _self._sceneBuilder = sceneBuilderExt; // 初始化 _sceneBuilder
+    } catch (err) {
+      console.error("Error loading SceneBuilder extension:", err);
+      return false; // 如果 SceneBuilder 加載失敗，則停止
+    }
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Z" || event.key === "z") {

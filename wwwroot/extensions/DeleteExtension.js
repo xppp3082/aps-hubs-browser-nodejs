@@ -15,9 +15,11 @@ class DeleteExtension extends BaseExtension {
   async load() {
     try {
       super.load();
-      this.panel = new DeletePanel(this, "delete-panel", "Delete Elements");
-      this.panel.initialize();
-      this.panel.setVisible(false);
+      if (!this.panel) {
+        this.panel = new DeletePanel(this, "delete-panel", "Delete Elements");
+        this.panel.initialize();
+        this.panel.setVisible(false);
+      }
 
       this.viewer.addEventListener(
         Autodesk.Viewing.SELECTION_CHANGED_EVENT,

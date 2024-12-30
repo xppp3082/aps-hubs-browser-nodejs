@@ -33,4 +33,30 @@ export function convertUnitBasedOnModel(viewer, distance) {
   }
 }
 
-export const viewerUtils = { getElementId, convertUnitBasedOnModel };
+export function findFragIdsByDBId(viewer, selectedDbId) {
+  const fragList = viewer.model.getFragmentList();
+
+  fragList.fragments.fragId2dbId.forEach((fragId, dbId) => {
+    if (dbId === selectedDbId) {
+      fragIdFound = fragId;
+    }
+  });
+
+  let fragIds = [];
+  let it = viewer.model.getInstanceTree();
+  it.enumNodeFragments(
+    selectedDbId,
+    (fragId) => {
+      fragIds.push(fragId);
+    },
+    true
+  );
+
+  return fragIds;
+}
+
+export const viewerUtils = {
+  getElementId,
+  convertUnitBasedOnModel,
+  findFragIdsByDBId,
+};
