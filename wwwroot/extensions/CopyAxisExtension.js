@@ -1,7 +1,7 @@
 import { viewerUtils } from "../utils/viewerUtils.js";
 // import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { BufferGeometryUtils } from "https://cdn.jsdelivr.net/npm/three@0.125.2/examples/jsm/utils/BufferGeometryUtils.js";
-// import { BufferGeometryUtils } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+// import * as BufferGeometryUtils from "https://unpkg.com/three@0.153.0/examples/jsm/utils/BufferGeometryUtils.js";
 
 AutodeskNamespace("Autodesk.ADN.Viewing.Extension");
 
@@ -43,6 +43,7 @@ Autodesk.ADN.Viewing.Extension.CopyAxisTool = function (viewer, options) {
           _transformMesh.position.y - fragProxy.offset.y,
           _transformMesh.position.z - fragProxy.offset.z
         );
+        fragProxy.position = targetPosition;
         fragProxy.updateAnimTransform();
       }
 
@@ -238,125 +239,102 @@ Autodesk.ADN.Viewing.Extension.CopyAxisTool = function (viewer, options) {
         modelNameOverride: "My Model Name",
       });
       try {
-        // let purple = new THREE.MeshPhongMaterial({
-        //   color: new THREE.Color(1, 0, 1),
-        // });
-        // modelBuilder.addMaterial("purple", purple);
-
-        // let torus = new THREE.BufferGeometry().fromGeometry(
-        //   new THREE.TorusGeometry(10, 2, 32, 32)
-        // );
-        // let mesh = new THREE.Mesh(torus, purple);
-
-        // mesh.matrix = new THREE.Matrix4().compose(
-        //   new THREE.Vector3(0, 12, 12),
-        //   new THREE.Quaternion(0, 0, 0, 1),
-        //   new THREE.Vector3(1, 1, 1)
-        // );
-        // mesh.dbId = 100; // Set the database id for the mesh
-        // modelBuilder.addMesh(mesh);
-
-        let selectedDbIds = viewer.getSelection();
-        if (selectedDbIds.length === 0) {
-          if (selectedDbIds.length === 0) {
-            selectedDbIds = viewer.getAggregateSelection();
-            if (selectedDbIds.length === 0) {
-              alert("請選擇一個元件");
-              return;
-            }
-          }
-        }
-        console.log("selectedDbIds: ", selectedDbIds);
-        console.log("_selectedFragProxyMap: ", _selectedFragProxyMap);
-
-        // 使用第一個選取的 DbId 取得對應的 FragId
-        for (const id of selectedDbIds) {
-          let selectIds = viewerUtils.findFragIdsByDBId(viewer, id);
-          console.log("selectIds: ", selectIds);
-          // 複製選取的片段幾何體
-          let geom = new THREE.BufferGeometry();
-          //let geom = new THREE.Geometry();
-          var renderProxy = null;
-          for (const selectId of selectIds) {
-            renderProxy = viewer.impl.getRenderProxy(viewer.model, selectId);
-            let VE = Autodesk.Viewing.Private.VertexEnumerator;
-            console.log("renderProxy: ", renderProxy);
-            // 檢查 renderProxy 和 geometry 是否有效
-            if (!renderProxy || !renderProxy.geometry) {
-              console.error("Invalid renderProxy or geometry, skipping.");
-              continue;
-            }
-            if (!geom) {
-              geom = geometry.clone();
-            } else {
-              const validGeometries = [geom, renderProxy.geometry].filter(
-                (geo) => geo && geo.attributes && geo.attributes.position
-              );
-              console.log("validGeometries: ", validGeometries);
-              if (validGeometries.length > 0) {
-                geom =
-                  BufferGeometryUtils.mergeBufferGeometries(validGeometries);
-              }
-            }
-
-            geom = BufferGeometryUtils.mergeBufferGeometries(
-              [geom, renderProxy.geometry],
-              true
-            );
-
-            ////頂點
-            //VE.enumMeshVertices(renderProxy.geometry, (v, i) => {
-            //    geom.vertices.push(new THREE.Vector3(v.x, v.y, v.z));
-            //});
-            //
-            ////面
-            //VE.enumMeshIndices(renderProxy.geometry, (a, b, c) => {
-            //    geom.faces.push(new THREE.Face3(a, b, c))
-            //});
-          }
-          //   ///創建新網格並應用材質
-          //   let mesh = new THREE.Mesh(
-          //     new THREE.BufferGeometry().fromGeometry(geom),
-          //     new THREE.MeshPhongMaterial({
-          //       color: new THREE.Color(1, 0, 0),
-          //     })
-          //   );
-
-          //   modelBuilder.addMesh(mesh);
-          // }
-
-          // let geom = new THREE.BufferGeometry();
-          // let geometryArray = [];
-          // let materialArray = [];
-          // for (var fragId in _selectedFragProxyMap) {
-          //   const originalFragProxy = _selectedFragProxyMap[fragId];
-          //   console.log(
-          //     `originalFragProxy: ${originalFragProxy} & current dbId: ${fragId}`
-          //   );
-          //   // const fragIds = viewerUtils.findFragIdsByDBId(viewer, fragId);
-          //   // console.log("fragIds: ", fragIds);
-          //   // for (const fragId of fragIds) {
-          //   const renderProxy = viewer.impl.getRenderProxy(viewer.model, fragId);
-          //   // 複製現有 Fragment 的幾何和材質
-          //   const geometry = renderProxy.geometry; // 幾何
-          //   const material = renderProxy.material; // 材質
-          //   console.log("fragId: ", fragId);
-          //   console.log("renderProxy: ", renderProxy);
-          //   console.log("geometry: ", geometry);
-          //   console.log("material: ", material);
-          //   const offset = originalFragProxy.offset; // 偏移
-
-          //   geom = BufferGeometryUtils.mergeBufferGeometries(
-          //     [geom, geometry],
-          //     false
-          //   );
-
-          //   console.log("geom: ", geom);
-        }
+        const mergedGeometry = convertDbIdToBufferGeometry(
+          viewer,
+          _selectedDbId,
+          modelBuilder
+        );
+        // if (mergedGeometry) {
+        //   const isSuccess = modelBuilder.addMesh(mergedGeometry);
+        //   console.log("isSuccess: ", isSuccess);
+        //   // dbid++;
+        //   // }
+        // }
+        alert("createCloneObject success");
       } catch (error) {
         console.error("Error in createCloneObject:", error);
         throw error;
       }
+    }
+
+    function convertDbIdToBufferGeometry(viewer, dbId, modelBuilder) {
+      //  獲取實體對應的所有 Fragment Ids
+      const instanceTree = viewer.model.getData().instanceTree;
+      const fragIds = [];
+      instanceTree.enumNodeFragments(dbId, (fragId) => {
+        fragIds.push(fragId);
+      });
+
+      // 檢查是否存在 fragment Id
+      if (fragIds.length === 0) {
+        console.error("No fragment Ids found for dbId: ", dbId);
+        return null;
+      }
+
+      // 創建一個新的 BufferGeometry 對象
+      const red = new THREE.MeshPhongMaterial({
+        color: new THREE.Color(1, 0, 0),
+      });
+      const torus = new THREE.BufferGeometry().fromGeometry(
+        new THREE.TorusGeometry(10, 2, 32, 32)
+      );
+      const transform = new THREE.Matrix4().compose(
+        new THREE.Vector3(19, 0, 0),
+        new THREE.Quaternion(0, 0, 0, 1),
+        new THREE.Vector3(1, 1, 1)
+      );
+
+      const finalMesh = new THREE.Mesh(torus, red);
+      finalMesh.matrix = transform;
+      console.log("finalMesh: ", finalMesh);
+      const isSuccess = modelBuilder.addMesh(finalMesh);
+      console.log("simple addMesh created: ", isSuccess);
+
+      // 遍歷所有 fragmentID，提取幾何
+      for (const fragId of fragIds) {
+        console.log("fragId: ", fragId);
+        const renderProxy = viewer.impl.getRenderProxy(viewer.model, fragId);
+        const bufferMesh = new THREE.Mesh(renderProxy.geometry, red);
+        console.log(typeof bufferMesh);
+        bufferMesh.matrix = transform;
+        console.log("renderProxy: ", renderProxy);
+        console.log("bufferMesh: ", bufferMesh);
+        const isSuccess = modelBuilder.addMesh(bufferMesh);
+        console.log("fragId addMesh created: ", isSuccess);
+      }
+
+      for (let i = 0; i < 5; i++) {
+        const size = Math.random() * 5 + 1;
+        const position = new THREE.Vector3(
+          Math.random() * 500 - 250,
+          Math.random() * 500 - 250,
+          Math.random() * 500 - 250
+        );
+        const cubeGeometry = new THREE.BoxGeometry(size, size, size);
+        const bufferCube = new THREE.BufferGeometry().fromGeometry(
+          cubeGeometry
+        );
+        const cubeMaterial = new THREE.MeshPhongMaterial({
+          color: new THREE.Color(Math.random(), Math.random(), Math.random()), // 隨機顏色
+        });
+        // 創建正方體網格
+        const cubeMesh = new THREE.Mesh(bufferCube, cubeMaterial);
+        cubeMesh.position.copy(position);
+
+        const isSuccess = modelBuilder.addMesh(cubeMesh);
+        console.log(`Cube ${i + 1} added: `, isSuccess);
+      }
+
+      return finalMesh;
+    }
+
+    function createMergedMesh() {
+      let geometries = [];
+      const renderProxy = viewer.impl.getRenderProxy(
+        viewer.model,
+        _selectedDbId
+      );
+      geometries.push(renderProxy.geometry);
     }
 
     function cleanupClonedObjects() {
