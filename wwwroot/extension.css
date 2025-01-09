@@ -1,0 +1,30 @@
+.panel-title {
+  font-size: 1.5rem;
+  padding: 0.5rem;
+}
+
+.panel-contianer {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  height: 100%;
+  width: 100%;
+}
+
+.tab-button {
+  background-color: #f0f0f0; /* 背景顏色 */
+  border: none; /* 無邊框 */
+  padding: 0.5 rem; /* 內邊距 */
+  cursor: pointer; /* 鼠標樣式 */
+  font-size: 0.25 rem; /* 字體大小 */
+  border-radius: 5px; /* 圓角 */
+  transition: background-color 0.3s; /* 背景顏色過渡效果 */
+}
+
+.tab-button:hover {
+  background-color: #e0e0e0; /* 懸停時的背景顏色 */
+}
+
+.tab-button:active {
+  background-color: #d0d0d0; /* 點擊時的背景顏色 */
+}

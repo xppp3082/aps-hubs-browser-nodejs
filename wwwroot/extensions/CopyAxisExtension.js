@@ -231,7 +231,6 @@ Autodesk.ADN.Viewing.Extension.CopyAxisTool = function (viewer, options) {
 
     async function createCloneObject(newPosition) {
       // 用於儲存新創建的 fragments
-
       initializeSceneBuilder();
       console.log("createCloneObject: ", _sceneBuilder);
       const modelBuilder = await _sceneBuilder.addNewModel({
@@ -244,12 +243,6 @@ Autodesk.ADN.Viewing.Extension.CopyAxisTool = function (viewer, options) {
           _selectedDbId,
           modelBuilder
         );
-        // if (mergedGeometry) {
-        //   const isSuccess = modelBuilder.addMesh(mergedGeometry);
-        //   console.log("isSuccess: ", isSuccess);
-        //   // dbid++;
-        //   // }
-        // }
         alert("createCloneObject success");
       } catch (error) {
         console.error("Error in createCloneObject:", error);
@@ -317,7 +310,7 @@ Autodesk.ADN.Viewing.Extension.CopyAxisTool = function (viewer, options) {
         const cubeMaterial = new THREE.MeshPhongMaterial({
           color: new THREE.Color(Math.random(), Math.random(), Math.random()), // 隨機顏色
         });
-        // 創建正方體網格
+
         const cubeMesh = new THREE.Mesh(bufferCube, cubeMaterial);
         cubeMesh.position.copy(position);
 

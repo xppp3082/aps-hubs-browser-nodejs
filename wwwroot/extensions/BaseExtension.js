@@ -80,21 +80,19 @@ export class BaseExtension extends Autodesk.Viewing.Extension {
   }
 
   async findPropertyNames(model) {
-    const dbIds = await this.findLeafNodes(model);
-    return new Promise((resolve, reject) => {
+    const dbids = await this.findLeafNodes(model);
+    return new Promise(function (resolve, reject) {
       model.getBulkProperties(
-        dbIds,
+        dbids,
         {},
-        (elements) => {
-          // 使用 Set 來確保屬性名稱不重複
-          const properties = new Set();
-          elements.forEach((element) => {
-            Object.keys(element.properties).forEach((prop) =>
-              properties.add(prop)
-            );
-          });
-          // 完成後轉換為陣列並回傳，透過 Promise.resolve 來包裝，可以透過 await 或 .then 來取得結果
-          resolve(properties);
+        function (results) {
+          let propNames = new Set();
+          for (const result of results) {
+            for (const prop of result.properties) {
+              propNames.add(prop.displayName);
+            }
+          }
+          resolve(Array.from(propNames.values()));
         },
         reject
       );

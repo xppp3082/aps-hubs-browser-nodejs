@@ -1,9 +1,9 @@
-// import "./extensions/MoveExtension.js";
 import "./extensions/DeleteExtension.js";
 import "./extensions/HistoryExtension.js";
-// import "./extensions/TransformExtension/contents/main.js";
 import "./extensions/TransformAxisExtension/contents/main.js";
 import "./extensions/CopyAxisExtension.js";
+import "./extensions/ListExtension.js";
+import "./extensions/HistogramExtension.js";
 
 async function getAccessToken(callback) {
   try {
@@ -29,6 +29,8 @@ export function initViewer(container) {
             "HistoryExtension",
             "TransformAxisTool",
             "CopyAxisTool",
+            "ListExtension",
+            "HistogramExtension",
           ],
         };
         const viewer = new Autodesk.Viewing.GuiViewer3D(container, config);
