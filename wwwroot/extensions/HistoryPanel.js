@@ -301,6 +301,7 @@ export class HistoryPanel extends Autodesk.Viewing.UI.PropertyPanel {
   }
 
   initialize() {
+    console.log("Initialize EditPanel", this);
     super.initialize();
     this.createUI();
   }

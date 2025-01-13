@@ -4,6 +4,7 @@ import "./extensions/TransformAxisExtension/contents/main.js";
 import "./extensions/CopyAxisExtension.js";
 import "./extensions/ListExtension.js";
 import "./extensions/HistogramExtension.js";
+import "./extensions/EditExtension.js";
 
 async function getAccessToken(callback) {
   try {
@@ -31,6 +32,7 @@ export function initViewer(container) {
             "CopyAxisTool",
             "ListExtension",
             "HistogramExtension",
+            "EditExtension",
           ],
         };
         const viewer = new Autodesk.Viewing.GuiViewer3D(container, config);
